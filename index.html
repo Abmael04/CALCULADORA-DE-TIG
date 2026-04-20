@@ -18,7 +18,7 @@
     <style>
         body { font-family: sans-serif; background-color: #f2fbf7; }
         
-        /* Oculta as setas de inputs number para ficar mais limpo */
+        /* Oculta as setas de inputs number para ficar mais limpo na UI */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
@@ -27,9 +27,111 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+
+        /* Oculta a área de impressão na tela normal */
+        #area-impressao {
+            display: none;
+        }
+
+        /* --- MOTOR DE IMPRESSÃO PURO (CSS Vanilla) --- */
+        @media print {
+            @page { margin: 0.5cm; size: A4 portrait; }
+            
+            /* Garante fundos e cores precisas na impressora */
+            html, body { 
+                background-color: white !important; 
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            /* OCULTA O REACT TOTALMENTE NA IMPRESSÃO */
+            #root, .no-print { display: none !important; }
+            
+            /* MOSTRA APENAS A ÁREA DE IMPRESSÃO */
+            #area-impressao { 
+                display: block !important; 
+                width: 100% !important;
+            }
+
+            /* Estilo da Ficha - Retângulo tracejado */
+            .ficha-recorte {
+                border: 2px dashed #333 !important;
+                padding: 15px !important;
+                margin-bottom: 15px !important; /* Espaçamento entre fichas */
+                border-radius: 8px !important;
+                box-sizing: border-box !important;
+                font-family: sans-serif !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                width: 100% !important;
+            }
+
+            /* Limite estrito: Força quebra de página a cada 4 fichas (caso imprima várias) */
+            .ficha-recorte:nth-child(4n) {
+                page-break-after: always !important;
+                break-after: page !important;
+                margin-bottom: 0 !important;
+            }
+
+            /* Header da Ficha */
+            .ficha-header {
+                display: flex !important;
+                justify-content: space-between !important;
+                border-bottom: 2px solid #000 !important;
+                padding-bottom: 8px !important;
+                margin-bottom: 12px !important;
+            }
+            
+            /* Linha de Material */
+            .ficha-item {
+                display: flex !important;
+                justify-content: flex-start !important;
+                border-bottom: 1px dotted #ccc !important;
+                padding: 6px 0 !important;
+                font-size: 13px !important;
+                color: #000 !important;
+            }
+            .ficha-item:last-child { border-bottom: none !important; }
+
+            /* Alertas Clínicos Críticos com Alto Contraste */
+            .alerta-critico {
+                background-color: #fee2e2 !important; /* Vermelho claro */
+                border: 2px solid #b91c1c !important; /* Vermelho escuro */
+                color: #7f1d1d !important;
+                font-weight: 900 !important;
+                padding: 10px !important;
+                border-radius: 6px !important;
+                margin-top: 12px !important;
+                font-size: 12px !important;
+                text-transform: uppercase !important;
+                /* Truque extra para garantir que o fundo imprima independentemente das configs de browser */
+                box-shadow: inset 0 0 0 1000px #fee2e2 !important; 
+            }
+
+            .alerta-aviso {
+                background-color: #fef3c7 !important; /* Amarelo/Laranja claro */
+                border: 2px solid #d97706 !important;
+                color: #92400e !important;
+                font-weight: 900 !important;
+                padding: 10px !important;
+                border-radius: 6px !important;
+                margin-top: 12px !important;
+                font-size: 12px !important;
+                text-transform: uppercase !important;
+                box-shadow: inset 0 0 0 1000px #fef3c7 !important;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased">
+    
+    <!-- ÁREA DE IMPRESSÃO OCULTA PARA O JAVASCRIPT PURO -->
+    <div id="area-impressao"></div>
+
+    <!-- APLICAÇÃO REACT -->
     <div id="root"></div>
 
     <script type="text/babel">
@@ -63,6 +165,8 @@
         const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></IconBase>;
         const Calendar = (props) => <IconBase {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconBase>;
         const ActivityLine = (props) => <IconBase {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
+        const Printer = (props) => <IconBase {...props}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></IconBase>;
+
 
         // --- LÓGICA DE MATERIAIS FARMACÊUTICOS ---
         const calculateMaterials = (details) => {
@@ -279,7 +383,7 @@
                     }
                 }
 
-                // CÁLCULO DE SEGURANÇA DOS ELETRÓLITOS E FÍSICO-QUÍMICA
+                // CÁLCULO DE SEGURANÇA DOS ELETRÓLITOS E FÍSICO-QUÍMICA (BULAS EXATAS)
                 let elec = { 
                     k_rate: 0, k_day: 0, na_day: 0, ca_elem_rate: 0, ca_day: 0, 
                     osmolarity: 0, k_mEq_L: 0, glicose_percent: 0,
@@ -313,7 +417,7 @@
                     elec.ca_day = (mEq_Ca * dailyMult) / weight; 
                     elec.ca_mg_day = (mg_Ca_gluconato * dailyMult) / weight; 
 
-                    // Físico-Química
+                    // Físico-Química (Osmolaridade Ponderada por Volume Exato)
                     elec.glicose_percent = currentConcentration / 10;
                     elec.k_mEq_L = (mEq_K / currentTotalVolume) * 1000;
                     
@@ -441,6 +545,71 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
+            // LÓGICA DE IMPRESSÃO VIA JAVASCRIPT PURO PARA EVITAR BUGS DE NAVEGADOR
+            const handleImprimirFichaAtual = () => {
+                // Prepara os dados para imprimir o estado ATUAL da calculadora
+                const pacienteStr = form.patientName || "NÃO IDENTIFICADO";
+                const prescricaoStr = form.prescriptionNumber || "---";
+                const materiaisCalc = calculateMaterials({
+                    ...form, 
+                    volG5: form.calcMode === 'inverse' ? results.calcBase : form.volG5, 
+                    volG50: form.calcMode === 'inverse' ? results.calcG50 : form.volG50
+                });
+
+                let alertaHtml = '';
+                const e = results.elec;
+                if (form.accessType === 'periferico') {
+                    if (e.osmolarity > 900) {
+                        alertaHtml = `<div class="alerta-critico">PERIGO: Osmolaridade ${e.osmolarity.toFixed(0)} mOsm/L (>900). Risco de Flebite! Requer Acesso Central.</div>`;
+                    } else if (e.osmolarity > 600) {
+                        alertaHtml = `<div class="alerta-aviso">ATENÇÃO: Osmolaridade ${e.osmolarity.toFixed(0)} mOsm/L (>600). Monitorizar acesso periférico.</div>`;
+                    }
+                    if (e.glicose_percent > 12.5) {
+                        alertaHtml += `<div class="alerta-critico">PERIGO: Glicose ${e.glicose_percent.toFixed(1)}% em via periférica.</div>`;
+                    }
+                    if (e.k_mEq_L > 40) {
+                        alertaHtml += `<div class="alerta-critico">PERIGO: Potássio ${e.k_mEq_L.toFixed(1)} mEq/L. Risco de dor/flebite.</div>`;
+                    }
+                }
+
+                const listaMateriais = materiaisCalc.map(mat => `
+                    <div class="ficha-item">
+                        <div style="font-weight: 900; width: 40px;">${mat.qtd}x</div>
+                        <div style="flex: 1;">${mat.name}</div>
+                    </div>
+                `).join('');
+
+                const fichaCompletaHTML = `
+                    <div class="ficha-recorte">
+                        <div class="ficha-header">
+                            <div>
+                                <div style="font-size: 10px; text-transform: uppercase; font-weight: bold; color: #555;">Paciente</div>
+                                <div style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 2px 0;">${pacienteStr}</div>
+                                <div style="font-size: 12px; font-weight: normal; color: #333;">
+                                    Prescrição Nº: <strong style="font-weight: 900;">${prescricaoStr}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #065f46; margin-bottom: 8px;">
+                            Materiais a Separar:
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            ${listaMateriais}
+                        </div>
+                        ${alertaHtml}
+                    </div>
+                `;
+
+                // Injeta na Div oculta e dispara o Window.Print
+                const divImpressao = document.getElementById('area-impressao');
+                divImpressao.innerHTML = `<div class="print-grid-container">${fichaCompletaHTML}</div>`;
+                
+                // Pequeno delay para garantir que o DOM processou a injeção
+                setTimeout(() => {
+                    window.print();
+                }, 200);
+            };
+
             const getStatus = (tig) => {
                 if (tig === 0) return { color: 'text-gray-400', bg: 'bg-gray-100', icon: null, text: '---' };
                 if (tig < 4) return { color: 'text-amber-600', bg: 'bg-amber-50', icon: <AlertTriangle className="w-4 h-4" />, text: 'Baixa (<4)' };
@@ -502,9 +671,8 @@
 
             const baseOsmMath = form.baseSolutionType === 'G5' ? 0.252 : (form.baseSolutionType === 'SF09' ? 0.308 : 0);
 
-            // --- VISTA: CALCULADORA PRINCIPAL ---
             return (
-                <div className="min-h-screen font-sans text-slate-800 p-4 md:p-8 flex justify-center items-start">
+                <div className="min-h-screen font-sans text-slate-800 p-4 md:p-8 flex justify-center items-start no-print">
                     <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
                         
                         {/* Coluna Principal */}
@@ -830,296 +998,25 @@
                                         </div>
                                     )}
 
-                                    {/* --- SOLICITAÇÃO À FARMÁCIA --- */}
-                                    {results.totalVolume > 0 && !results.inverseError && (
-                                        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl shadow-sm">
-                                            <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2 border-b border-emerald-200/50 pb-2">
-                                                <Beaker className="w-4 h-4 text-emerald-600" /> Solicitação à Farmácia
-                                            </h3>
-                                            <p className="text-xs text-emerald-600 mb-3 font-medium">Materiais a requisitar para o preparo desta bolsa:</p>
-                                            <ul className="space-y-1 text-sm font-medium text-emerald-900">
-                                                {calculateMaterials({...form, volG5: form.calcMode === 'inverse' ? results.calcBase : form.volG5, volG50: form.calcMode === 'inverse' ? results.calcG50 : form.volG50}).map((mat, i) => (
-                                                    <li key={i} className="flex items-start gap-2">
-                                                        <span className="mt-0.5 text-emerald-500">•</span> 
-                                                        <span><strong className="text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-1.5 py-0.5 rounded shadow-sm">{mat.qtd}x</strong> {mat.name}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {/* --- SEGURANÇA ELETROLÍTICA E FÍSICO-QUÍMICA --- */}
-                                    {results.totalVolume > 0 && form.weight > 0 && !results.inverseError && (
-                                        <div className={`p-4 rounded-xl border-2 transition-all shadow-sm ${hasDanger ? 'bg-red-50 border-red-300' : hasWarning ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200'}`}>
-                                            <h3 className={`flex items-center gap-2 text-sm font-bold uppercase tracking-wider mb-3 ${hasDanger ? 'text-red-700' : hasWarning ? 'text-amber-700' : 'text-emerald-700'}`}>
-                                                <ShieldAlert className="w-4 h-4" /> 
-                                                Segurança e Limites Clínicos
-                                            </h3>
-                                            
-                                            {/* Físico-Química e Risco de Flebite */}
-                                            {form.accessType === 'periferico' && (
-                                            <div className="mb-3 bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-inner">
-                                                <p className="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Físico-Química (Via Periférica)</p>
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between items-center text-[10px] text-slate-600">
-                                                        <span>Osmolaridade (Máx: 900 mOsm/L):</span>
-                                                        <span className={`font-bold ${isOsmolHigh ? 'text-red-600' : isOsmolWarn ? 'text-amber-600' : 'text-emerald-700'}`}>{e.osmolarity.toFixed(0)} mOsm/L</span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center text-[10px] text-slate-600">
-                                                        <span>Concentração Glicose (Máx: 12,5%):</span>
-                                                        <span className={`font-bold ${isGlicoseHigh ? 'text-red-600' : 'text-emerald-700'}`}>{e.glicose_percent.toFixed(1)}%</span>
-                                                    </div>
-                                                    {e.k_day > 0 && (
-                                                    <div className="flex justify-between items-center text-[10px] text-slate-600">
-                                                        <span>Conc. Potássio (Máx: 40 mEq/L):</span>
-                                                        <span className={`font-bold ${isKConcHigh ? 'text-red-600' : 'text-emerald-700'}`}>{e.k_mEq_L.toFixed(1)} mEq/L</span>
-                                                    </div>
-                                                    )}
-                                                </div>
-                                                {isOsmolHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Osmolaridade > 900 mOsm/L requer acesso venoso central (PICC/CVC).</p>}
-                                                {isOsmolWarn && !isOsmolHigh && <p className="text-[10px] text-amber-700 font-bold mt-2 bg-amber-100 border border-amber-200 p-1.5 rounded">Atenção: Osmolaridade > 600 mOsm/L reduz tempo de vida do acesso periférico.</p>}
-                                                {isGlicoseHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Glicose > 12,5% em acesso periférico causa flebite grave.</p>}
-                                                {isKConcHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Potássio > 40 mEq/L. Risco de flebite química e dor intensa.</p>}
-                                            </div>
-                                            )}
-
-                                            {/* Potássio */}
-                                            <div className="mb-2">
-                                                <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
-                                                    <span>Potássio (KCl 10%)</span>
-                                                    <span className={e.k_rate > 0.5 ? 'text-red-600' : e.k_rate >= 0.4 ? 'text-amber-600' : 'text-emerald-600'}>
-                                                        Infusão: {refUnit === 'mEq' ? `${e.k_rate.toFixed(2)} mEq/kg/h` : `${e.k_mg_rate.toFixed(1)} mg/kg/h (KCl)`}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                                                    <span>Recomendado: {refUnit === 'mEq' ? '1 a 2 mEq/kg/dia' : '75 a 150 mg/kg/dia (KCl)'}</span>
-                                                    <span className={`font-semibold ${e.k_day > 2 ? 'text-amber-600' : e.k_day > 4 ? 'text-red-600' : 'text-slate-600'}`}>
-                                                        A receber: {refUnit === 'mEq' ? `${e.k_day.toFixed(1)} mEq/kg/dia` : `${e.k_mg_day.toFixed(0)} mg/kg/dia (KCl)`}
-                                                    </span>
-                                                </div>
-                                                {isKEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Aviso: K+ não recomendado antes das 48-72h e diurese bem estabelecida.</p>}
-                                                {e.k_rate > 0.5 && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100/80 p-1 rounded">ALERTA: Infusão > 0.5 mEq/kg/h. Risco de paragem cardíaca!</p>}
-                                            </div>
-
-                                            {/* Sódio */}
-                                            <div className="mb-2 border-t border-slate-200/60 pt-2">
-                                                <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
-                                                    <span>Sódio (Total NaCl)</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                                                    <span>Recomendado: {refUnit === 'mEq' ? '2 a 4 mEq/kg/dia' : '117 a 234 mg/kg/dia (NaCl)'}</span>
-                                                    <span className={`font-semibold ${e.na_day > 4 ? 'text-amber-600' : e.na_day > 6 ? 'text-red-600' : 'text-slate-600'}`}>
-                                                        A receber: {refUnit === 'mEq' ? `${e.na_day.toFixed(1)} mEq/kg/dia` : `${e.na_mg_day.toFixed(0)} mg/kg/dia (NaCl)`}
-                                                    </span>
-                                                </div>
-                                                {isNaEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Aviso: Na+ não recomendado no 1º/2º dia, aguardar perda de peso fisiológica e diurese.</p>}
-                                            </div>
-
-                                            {/* Cálcio */}
-                                            <div className="border-t border-slate-200/60 pt-2">
-                                                <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
-                                                    <span>Cálcio (Gliconato 10%)</span>
-                                                    <span className={e.ca_elem_rate > 11 ? 'text-red-600' : e.ca_elem_rate >= 9 ? 'text-amber-600' : 'text-emerald-600'}>
-                                                        Infusão: {e.ca_elem_rate.toFixed(1)} mg/kg/h (Elementar)
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                                                    <span>Recomendado: {refUnit === 'mEq' ? '1 a 2 mEq/kg/dia' : '20 a 40 mg/kg/dia (Elem.)'}</span>
-                                                    <span className={`font-semibold ${e.ca_day > 2 ? 'text-amber-600' : e.ca_day > 4 ? 'text-red-600' : 'text-slate-600'}`}>
-                                                        A receber: {refUnit === 'mEq' ? `${e.ca_day.toFixed(1)} mEq/kg/dia` : `${e.ca_mg_day.toFixed(1)} mg/kg/dia (Elem.)`}
-                                                    </span>
-                                                </div>
-                                                {e.ca_elem_rate > 11 && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100/80 p-1 rounded">ALERTA: Infusão de cálcio elementar excedeu o limite de segurança!</p>}
-                                                {form.accessType === 'periferico' && parseFloat(form.volCa) > 0 && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100 border border-amber-200 p-1.5 rounded">Atenção (Periférico): O extravasamento de cálcio causa necrose tecidual severa. Nunca misture com Bicarbonato ou Fosfato.</p>}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* --- EXPLICAÇÃO MATEMÁTICA COMPLETAS --- */}
-                                    {(results.totalVolume > 0 && form.weight > 0) && (
-                                        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                    <div className="flex gap-3 w-full mt-auto">
+                                        <button 
+                                            onClick={saveToHistory} 
+                                            disabled={results.tig === 0 || results.inverseError !== null} 
+                                            className={`flex-1 flex items-center justify-center gap-2 p-3 text-white rounded-xl font-semibold transition-all shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed ${editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                                        >
+                                            <Save className="w-5 h-5" /> 
+                                            {editingId ? 'Atualizar Prescrição' : 'Guardar no Histórico'}
+                                        </button>
+                                        
+                                        {form.calcMode === 'forward' && results.totalVolume > 0 && !results.inverseError && (
                                             <button 
-                                                onClick={() => setShowMath(!showMath)}
-                                                className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors text-sm font-bold text-emerald-800 border-b border-transparent"
+                                                onClick={handleImprimirFichaAtual}
+                                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-semibold transition-all shadow-sm"
                                             >
-                                                <span className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-emerald-600"/> Ver passo a passo do cálculo</span>
-                                                {showMath ? <ChevronUp className="w-4 h-4 text-emerald-600" /> : <ChevronDown className="w-4 h-4 text-emerald-600" />}
+                                                <Printer className="w-5 h-5" /> Imprimir Ficha
                                             </button>
-                                            
-                                            {showMath && (
-                                                <div className="p-5 bg-white text-xs font-mono text-slate-600 space-y-4 border-t border-slate-200 overflow-x-auto">
-                                                    {/* SEÇÃO 1: TIG */}
-                                                    <h4 className="font-bold text-emerald-900 flex items-center gap-1"><Activity className="w-4 h-4 text-emerald-600" /> Cálculos da TIG</h4>
-                                                    {form.calcMode === 'forward' ? (
-                                                        <>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">1. Massa de Glicose (mg)</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= (Vol Base x {cBase}mg/ml) + (Vol G50% x 500mg/ml)</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({results.calcBase} x {cBase}) + ({results.calcG50} x 500) = <strong className="text-emerald-700">{results.glucoseMass.toFixed(0)} mg</strong></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">2. Volume Total (ml)</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= Vol Base + Vol G50% + Eletrólitos</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.calcBase} + {results.calcG50} + {results.vElec} = <strong className="text-emerald-700">{results.totalVolume.toFixed(1)} ml</strong></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">3. Concentração (mg/ml)</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= Massa / Volume Total</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.glucoseMass.toFixed(0)} / {results.totalVolume.toFixed(1)} = <strong className="text-emerald-700">{results.concentration.toFixed(2)} mg/ml</strong></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">4. TIG (mg/kg/min)</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= (Concentração x Velocidade) / (Peso x 60 min)</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({results.concentration.toFixed(2)} x {form.rate || 0}) / ({form.weight} x 60) = <strong className="text-emerald-700">{results.tig.toFixed(2)}</strong></p>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">1. Concentração Alvo Necessária (mg/ml)</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= (TIG Alvo x Peso x 60) / Velocidade</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({form.targetTig} x {form.weight} x 60) / {form.rate || 1} = <strong className="text-teal-700">{results.targetConc.toFixed(2)} mg/ml</strong></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">2. Massa Total Alvo (mg)</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= Concentração Alvo x Volume Total</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.targetConc.toFixed(2)} x {results.totalVolume} = <strong className="text-teal-700">{((results.targetConc * results.totalVolume)).toFixed(0)} mg</strong></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">3. Volume Restante p/ Glicose (ml)</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= Volume Total - Eletrólitos</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.totalVolume} - {results.vElec} = <strong className="text-teal-700">{results.vRem.toFixed(1)} ml</strong></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">4. Álgebra: Encontrar Volume de G50%</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= (Massa Total - (Vol Restante x Conc. Base)) / (500 - Conc. Base)</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((results.targetConc * results.totalVolume)).toFixed(0)} - ({results.vRem.toFixed(1)} x {cBase})) / (500 - {cBase}) = <strong className="text-teal-700">{results.calcG50.toFixed(2)} ml</strong></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800 mb-1">5. Volume da Solução Base ({baseLabel})</p>
-                                                                <p className="text-[10px] text-slate-400 mb-1">= Volume Restante - Vol G50%</p>
-                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.vRem.toFixed(1)} - {results.calcG50.toFixed(2)} = <strong className="text-teal-700">{results.calcBase.toFixed(2)} ml</strong></p>
-                                                            </div>
-                                                        </>
-                                                    )}
-
-                                                    {/* SEÇÃO 2: ELETRÓLITOS */}
-                                                    {(parseFloat(form.rate) > 0) && (
-                                                    <div className="mt-6 pt-4 border-t border-slate-200 space-y-4">
-                                                        <h4 className="font-bold text-emerald-900 flex items-center gap-1"><ShieldAlert className="w-4 h-4 text-emerald-600" /> Físico-Química e Segurança</h4>
-                                                        
-                                                        <div className="mb-2">
-                                                            <p className="font-bold text-slate-700 mb-1">A. Osmolaridade da Bolsa (mOsm/L)</p>
-                                                            <p className="text-[10px] text-slate-400 mb-1">Cálculo Exato Baseado nas Bulas (Total mOsm / Volume Total)</p>
-                                                            <p className="bg-slate-50 p-2 rounded border border-slate-100 text-[10px] leading-relaxed">
-                                                                mOsm = (Base x {baseOsmMath}) + (G50% x 2,775) + (NaCl10% x 3,422) + (KCl10% x 2,682) + (Ca10% x 0,683) + (NaCl0,9% x 0,308)<br/>
-                                                                = <strong className="text-emerald-700 text-xs">{e.osmolarity.toFixed(0)} mOsm/L</strong>
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="mb-2">
-                                                            <p className="font-bold text-slate-700 mb-1">B. Duração da Infusão e Fator Diário</p>
-                                                            <p className="text-[10px] text-slate-400 mb-1">Tempo (h) = Vol Total / Velocidade</p>
-                                                            <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.totalVolume.toFixed(1)} / {form.rate} = <strong className="text-slate-700">{duracaoHoras.toFixed(1)} horas</strong></p>
-                                                            <p className="text-[10px] text-slate-400 mt-1 mb-1">Multiplicador Diário = 24h / Tempo</p>
-                                                            <p className="bg-slate-50 p-2 rounded border border-slate-100">= 24 / {duracaoHoras.toFixed(1)} = <strong className="text-slate-700">{multiplicadorDiario.toFixed(2)}</strong></p>
-                                                        </div>
-
-                                                        {parseFloat(form.volKcl) > 0 && (
-                                                        <div className="mb-2">
-                                                            <p className="font-bold text-slate-700 mb-1">C. Potássio (KCl 10%)</p>
-                                                            {refUnit === 'mEq' ? (
-                                                                <>
-                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq K = Vol KCl x 1,34 mEq/mL</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= {form.volKcl} x 1,34 = <strong>{(form.volKcl * 1.34).toFixed(2)} mEq</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão (mEq/kg/h) = (mEq K / Tempo) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 1.34).toFixed(2)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{e.k_rate.toFixed(2)} mEq/kg/h</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mEq/kg/dia) = (mEq K * Mult. Diário) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 1.34).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.k_day.toFixed(2)} mEq/kg/dia</strong></p>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <p className="text-[10px] text-slate-400 mb-1">mg KCl = Vol KCl x 100 mg/mL</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= {form.volKcl} x 100 = <strong>{(form.volKcl * 100).toFixed(0)} mg</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão (mg/kg/h) = (mg KCl / Tempo) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 100).toFixed(0)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{e.k_mg_rate.toFixed(1)} mg/kg/h</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mg/kg/dia) = (mg KCl * Mult. Diário) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 100).toFixed(0)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.k_mg_day.toFixed(0)} mg/kg/dia</strong></p>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                        )}
-
-                                                        {(parseFloat(form.volNacl) > 0 || parseFloat(form.volNacl09) > 0 || form.baseSolutionType === 'SF09') && (
-                                                        <div className="mb-2">
-                                                            <p className="font-bold text-slate-700 mb-1">D. Sódio Total</p>
-                                                            {refUnit === 'mEq' ? (
-                                                                <>
-                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq Na = (NaCl 10% x 1,71) + (NaCl 0,9% x 0,154) + (Base SF 0,9% x 0,154)</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({parseFloat(form.volNacl || 0)} x 1,71) + ({parseFloat(form.volNacl09 || 0)} x 0,154) + ({form.baseSolutionType === 'SF09' ? results.calcBase.toFixed(2) : 0} x 0,154) = <strong>{((parseFloat(form.volNacl || 0) * 1.71) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} mEq</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mEq/kg/dia) = (mEq Na * Mult. Diário) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((parseFloat(form.volNacl || 0) * 1.71) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.na_day.toFixed(2)} mEq/kg/dia</strong></p>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <p className="text-[10px] text-slate-400 mb-1">mg NaCl = (NaCl 10% x 100) + (NaCl 0,9% x 9) + (Base SF 0,9% x 9)</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({parseFloat(form.volNacl || 0)} x 100) + ({parseFloat(form.volNacl09 || 0)} x 9) + ({form.baseSolutionType === 'SF09' ? results.calcBase.toFixed(2) : 0} x 9) = <strong>{((parseFloat(form.volNacl || 0) * 100) + (parseFloat(form.volNacl09 || 0) * 9) + (form.baseSolutionType === 'SF09' ? results.calcBase * 9 : 0)).toFixed(0)} mg</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mg/kg/dia) = (mg NaCl * Mult. Diário) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((parseFloat(form.volNacl || 0) * 100) + (parseFloat(form.volNacl09 || 0) * 9) + (form.baseSolutionType === 'SF09' ? results.calcBase * 9 : 0)).toFixed(0)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.na_mg_day.toFixed(0)} mg/kg/dia</strong></p>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                        )}
-
-                                                        {parseFloat(form.volCa) > 0 && (
-                                                        <div className="mb-2">
-                                                            <p className="font-bold text-slate-700 mb-1">E. Cálcio (Gliconato 10%)</p>
-                                                            {refUnit === 'mEq' ? (
-                                                                <>
-                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq Ca = Vol Ca x 0,465 mEq/mL</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100"><strong>{(form.volCa * 0.465).toFixed(2)} mEq</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão Elementar (mEq/kg/h) = (mEq Ca / Tempo) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 0.465).toFixed(2)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{(e.ca_day / 24).toFixed(2)} mEq/kg/h</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mEq/kg/dia) = (mEq Ca * Mult. Diário) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 0.465).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.ca_day.toFixed(2)} mEq/kg/dia</strong></p>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <p className="text-[10px] text-slate-400 mb-1">mg Gliconato de Ca = Vol Ca x 97,9 mg/mL</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100"><strong>{(form.volCa * 97.9).toFixed(1)} mg</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão (mg/kg/h) = (mg Gliconato / Tempo) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 97.9).toFixed(1)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{e.ca_mg_rate.toFixed(1)} mg/kg/h</strong></p>
-                                                                    
-                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mg/kg/dia) = (mg Gliconato * Mult. Diário) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 97.9).toFixed(1)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.ca_mg_day.toFixed(0)} mg/kg/dia</strong></p>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                        )}
-                                                    </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    <button 
-                                        onClick={saveToHistory} 
-                                        disabled={results.tig === 0 || results.inverseError !== null} 
-                                        className={`mt-auto w-full flex items-center justify-center gap-2 p-3 text-white rounded-xl font-semibold transition-all shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed ${editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
-                                    >
-                                        <Save className="w-5 h-5" /> 
-                                        {editingId ? 'Atualizar Prescrição' : 'Guardar no Histórico'}
-                                    </button>
+                                        )}
+                                    </div>
                                 </div>
                             </main>
                         </div>
