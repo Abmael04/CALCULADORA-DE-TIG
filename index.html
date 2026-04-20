@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora TIG Neonatal Avançada (Offline)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        body { font-family: sans-serif; background-color: #f2fbf7; }
+        
+        /* Oculta as setas de inputs number para ficar mais limpo */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ÍCONES SVG NATIVOS ---
+        const IconBase = ({ children, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className || "w-6 h-6"}>{children}</svg>;
+        const Calculator = (props) => <IconBase {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></IconBase>;
+        const Hospital = (props) => <IconBase {...props}><path d="M12 6v4"/><path d="M14 8h-4"/><path d="M5 22v-2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><path d="M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"/><path d="M10 22v-4h4v4"/></IconBase>;
+        const CareHeart = (props) => <IconBase {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5 9.5 8.5h3L11 12"/></IconBase>;
+        const Syringe = (props) => <IconBase {...props}><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></IconBase>;
+        const Scale = (props) => <IconBase {...props}><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></IconBase>;
+        const Activity = (props) => <IconBase {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase>;
+        const RotateCcw = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>;
+        const AlertTriangle = (props) => <IconBase {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></IconBase>;
+        const CheckCircle = (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
+        const Beaker = (props) => <IconBase {...props}><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></IconBase>;
+        const Save = (props) => <IconBase {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></IconBase>;
+        const History = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></IconBase>;
+        const User = (props) => <IconBase {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconBase>;
+        const Trash2 = (props) => <IconBase {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></IconBase>;
+        const FileText = (props) => <IconBase {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconBase>;
+        const Hash = (props) => <IconBase {...props}><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></IconBase>;
+        const Pencil = (props) => <IconBase {...props}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></IconBase>;
+        const X = (props) => <IconBase {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
+        const Target = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconBase>;
+        const ChevronDown = (props) => <IconBase {...props}><polyline points="6 9 12 15 18 9"/></IconBase>;
+        const ChevronUp = (props) => <IconBase {...props}><polyline points="18 15 12 9 6 15"/></IconBase>;
+        const BookOpen = (props) => <IconBase {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>;
+        const ShieldAlert = (props) => <IconBase {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></IconBase>;
+        const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></IconBase>;
+        const Calendar = (props) => <IconBase {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconBase>;
+        const ActivityLine = (props) => <IconBase {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
+
+        // --- LÓGICA DE MATERIAIS FARMACÊUTICOS ---
+        const calculateMaterials = (details) => {
+            const materials = [];
+            const baseType = details.baseSolutionType || 'G5';
+            const vBase = parseFloat(details.volG5) || 0; 
+            
+            if (vBase > 0) {
+                if (baseType === 'SF09') {
+                    const frascos = Math.ceil(vBase / 100);
+                    materials.push({ qtd: frascos, name: "CLORETO DE SÓDIO 0,9% 100ML SOL INJ IV FR" });
+                } else if (baseType === 'ABD') {
+                    if (vBase <= 100) materials.push({ qtd: 1, name: "ÁGUA PARA INJEÇÃO (ABD) 100ML FRASCO" });
+                    else if (vBase <= 250) materials.push({ qtd: 1, name: "ÁGUA PARA INJEÇÃO (ABD) 250ML FRASCO" });
+                    else if (vBase <= 500) materials.push({ qtd: 1, name: "ÁGUA PARA INJEÇÃO (ABD) 500ML FRASCO" });
+                    else {
+                        const frascos = Math.ceil(vBase / 500);
+                        materials.push({ qtd: frascos, name: "ÁGUA PARA INJEÇÃO (ABD) 500ML FRASCO" });
+                    }
+                } else {
+                    if (vBase <= 100) materials.push({ qtd: 1, name: "GLICOSE 5% 100ML SOLUÇÃO ISOTÓNICA 50MG/ML SOL INJ IV FR" });
+                    else if (vBase <= 250) materials.push({ qtd: 1, name: "GLICOSE 5% 250ML SOLUÇÃO ISOTÓNICA 50MG/ML SOL INJ IV FR" });
+                    else if (vBase <= 500) materials.push({ qtd: 1, name: "GLICOSE 5% 500ML SOLUÇÃO ISOTÓNICA 50MG/ML SOL INJ IV FR" });
+                    else {
+                        const frascos = Math.ceil(vBase / 500);
+                        materials.push({ qtd: frascos, name: "GLICOSE 5% 500ML SOLUÇÃO ISOTÓNICA 50MG/ML SOL INJ IV FR" });
+                    }
+                }
+            }
+
+            const vG50 = parseFloat(details.volG50) || 0;
+            if (vG50 > 0) materials.push({ qtd: Math.ceil(vG50 / 10), name: "GLICOSE HIPERTÓNICA 50% AMPOLA 10ML" });
+
+            const vCa = parseFloat(details.volCa) || 0;
+            if (vCa > 0) materials.push({ qtd: Math.ceil(vCa / 10), name: "GLICONATO DE CÁLCIO 10% 10ML AMP 100MG/ML" });
+
+            const vKcl = parseFloat(details.volKcl) || 0;
+            if (vKcl > 0) materials.push({ qtd: Math.ceil(vKcl / 10), name: "CLORETO DE POTÁSSIO 10% 10ML AMPOLA" });
+
+            const vNacl = parseFloat(details.volNacl) || 0;
+            if (vNacl > 0) materials.push({ qtd: Math.ceil(vNacl / 10), name: "CLORETO DE SÓDIO 10% 10ML AMPOLA" });
+
+            const vNacl09 = parseFloat(details.volNacl09) || 0;
+            if (vNacl09 > 0) materials.push({ qtd: Math.ceil(vNacl09 / 10), name: "CLORETO DE SÓDIO 0,9% 10ML AMPOLA" });
+
+            return materials;
+        };
+
+        const getDaysOfLife = (dobStr) => {
+            if (!dobStr) return null;
+            const [y, m, d] = dobStr.split('-');
+            const birthDate = new Date(y, m - 1, d);
+            if (isNaN(birthDate.getTime())) return null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const diffTime = today - birthDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays >= 0 ? diffDays + 1 : 0; 
+        };
+
+        function TigCalculator() {
+            // --- Estados ---
+            const initialFormState = {
+                patientName: '',
+                ageInputMode: 'dob',
+                birthDate: '',
+                daysOfLifeInput: '',
+                prescriptionNumber: '', 
+                weight: '',
+                rate: '',
+                volG5: '', 
+                volG50: '',
+                volCa: '',
+                volKcl: '',
+                volNacl: '',
+                volNacl09: '',
+                baseSolutionType: 'G5',
+                calcMode: 'forward',
+                targetTig: '',
+                targetVolume: '100',
+                rnType: 'RNT',
+                photoTherapy: false,
+                radiantWarmer: false,
+                humidifiedIncubator: false,
+                accessType: 'periferico'
+            };
+
+            const [form, setForm] = useState(initialFormState);
+            const [results, setResults] = useState({ 
+                totalVolume: 0, concentration: 0, tig: 0, glucoseMass: 0,
+                calcBase: 0, calcG50: 0, inverseError: null, targetConc: 0, vElec: 0, vRem: 0,
+                elec: { 
+                    k_rate: 0, k_day: 0, na_day: 0, ca_elem_rate: 0, ca_day: 0, 
+                    osmolarity: 0, k_mEq_L: 0, glicose_percent: 0,
+                    k_mg_rate: 0, k_mg_day: 0, na_mg_day: 0, ca_mg_day: 0, ca_mg_rate: 0
+                } 
+            });
+            const [history, setHistory] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('tig_history');
+                    return saved ? JSON.parse(saved) : [];
+                } catch (e) { return []; }
+            });
+            const [showHistory, setShowHistory] = useState(false);
+            const [editingId, setEditingId] = useState(null);
+            const [showMath, setShowMath] = useState(false); 
+            const [showVHT, setShowVHT] = useState(false); 
+            const [refUnit, setRefUnit] = useState('mEq');
+
+            // Resolução de Dias de Vida
+            const calculatedDays = getDaysOfLife(form.birthDate);
+            const daysOfLife = form.ageInputMode === 'days' 
+                ? (form.daysOfLifeInput !== '' ? parseInt(form.daysOfLifeInput, 10) : null) 
+                : calculatedDays;
+
+            // --- Helper Labels Exatos Bula ---
+            const getSubLabel = (item) => {
+                if (refUnit === 'mOsm') {
+                    if (item === 'Ca') return "683 mOsm/L";
+                    if (item === 'KCl') return "2682 mOsm/L";
+                    if (item === 'NaCl') return "3422 mOsm/L";
+                    if (item === 'NaCl09') return "308 mOsm/L";
+                    if (item === 'G50') return "2775 mOsm/L";
+                    if (item === 'G5') return "252 mOsm/L";
+                    if (item === 'SF09') return "308 mOsm/L";
+                    if (item === 'ABD') return "0 mOsm/L";
+                }
+                if (refUnit === 'mg') {
+                    if (item === 'Ca') return "97,9 mg/mL";
+                    if (item === 'KCl') return "100 mg/mL";
+                    if (item === 'NaCl') return "100 mg/mL";
+                    if (item === 'NaCl09') return "9 mg/mL";
+                    if (item === 'G50') return "500 mg/mL";
+                    if (item === 'G5') return "50 mg/mL";
+                    if (item === 'SF09') return "9 mg/mL";
+                    if (item === 'ABD') return "0 mg/mL";
+                }
+                // default mEq
+                if (item === 'Ca') return "0,465 mEq/mL";
+                if (item === 'KCl') return "1,34 mEq/mL";
+                if (item === 'NaCl') return "1,71 mEq/mL";
+                if (item === 'NaCl09') return "0,154 mEq/mL";
+                if (item === 'G50') return "500 mg/mL"; 
+                if (item === 'G5') return "50 mg/mL";
+                if (item === 'SF09') return "0,154 mEq/mL";
+                if (item === 'ABD') return "Diluente";
+            };
+
+            // --- Efeitos ---
+            useEffect(() => { localStorage.setItem('tig_history', JSON.stringify(history)); }, [history]);
+
+            // LÓGICA PRINCIPAL MATEMÁTICA E SEGURANÇA ELETROLÍTICA
+            useEffect(() => {
+                const weight = parseFloat(form.weight) || 0;
+                const rate = parseFloat(form.rate) || 0;
+                const vCa = parseFloat(form.volCa) || 0;
+                const vKcl = parseFloat(form.volKcl) || 0;
+                const vNacl = parseFloat(form.volNacl) || 0;
+                const vNacl09 = parseFloat(form.volNacl09) || 0;
+                const cBase = form.baseSolutionType === 'G5' ? 50 : 0; 
+                const vElec = vCa + vKcl + vNacl + vNacl09;
+
+                let currentTotalVolume = 0;
+                let currentBase = 0;
+                let currentG50 = 0;
+                let currentInverseError = null;
+                let currentTig = 0;
+                let currentGlucoseMass = 0;
+                let currentConcentration = 0;
+                let currentTargetConc = 0;
+                let currentVRem = 0;
+
+                if (form.calcMode === 'forward') {
+                    currentBase = parseFloat(form.volG5) || 0;
+                    currentG50 = parseFloat(form.volG50) || 0;
+                    currentGlucoseMass = (currentBase * cBase) + (currentG50 * 500);
+                    currentTotalVolume = currentBase + currentG50 + vElec;
+
+                    if (currentTotalVolume > 0 && weight > 0) {
+                        currentConcentration = currentGlucoseMass / currentTotalVolume;
+                        currentTig = (currentConcentration * rate) / (weight * 60);
+                    }
+                } 
+                else if (form.calcMode === 'inverse') {
+                    const targetTig = parseFloat(form.targetTig) || 0;
+                    currentTotalVolume = parseFloat(form.targetVolume) || 0;
+                    
+                    if (weight > 0 && rate > 0 && currentTotalVolume > 0 && targetTig > 0) {
+                        currentVRem = currentTotalVolume - vElec;
+                        
+                        if (currentVRem <= 0) {
+                            currentInverseError = "Volume de eletrólitos maior ou igual à bolsa total.";
+                        } else {
+                            currentTargetConc = (targetTig * weight * 60) / rate;
+                            const mGlic = currentTargetConc * currentTotalVolume;
+
+                            currentG50 = (mGlic - (currentVRem * cBase)) / (500 - cBase);
+                            currentBase = currentVRem - currentG50;
+
+                            if (currentG50 < 0) {
+                                currentInverseError = `TIG muito baixa. Impossível atingir usando ${form.baseSolutionType === 'G5' ? 'Glicose 5%' : 'esta solução base'}. Tente trocar a solução base para SF 0.9% ou ABD.`;
+                                currentG50 = 0;
+                                currentBase = currentVRem;
+                            } else if (currentBase < 0) {
+                                currentInverseError = "TIG muito alta. A concentração requerida é maior que 50%.";
+                                currentBase = 0;
+                                currentG50 = currentVRem;
+                            }
+
+                            currentGlucoseMass = (currentBase * cBase) + (currentG50 * 500);
+                            currentConcentration = currentGlucoseMass / currentTotalVolume;
+                            currentTig = (currentConcentration * rate) / (weight * 60);
+                        }
+                    }
+                }
+
+                // CÁLCULO DE SEGURANÇA DOS ELETRÓLITOS E FÍSICO-QUÍMICA
+                let elec = { 
+                    k_rate: 0, k_day: 0, na_day: 0, ca_elem_rate: 0, ca_day: 0, 
+                    osmolarity: 0, k_mEq_L: 0, glicose_percent: 0,
+                    k_mg_rate: 0, k_mg_day: 0, na_mg_day: 0, ca_mg_day: 0, ca_mg_rate: 0
+                };
+                
+                if (weight > 0 && rate > 0 && currentTotalVolume > 0 && !currentInverseError) {
+                    const durationHours = currentTotalVolume / rate;
+                    const dailyMult = 24 / durationHours;
+
+                    // Potássio
+                    const mEq_K = vKcl * 1.34;
+                    elec.k_rate = (mEq_K / durationHours) / weight; 
+                    elec.k_day = (mEq_K * dailyMult) / weight; 
+                    const mg_KCl = vKcl * 100;
+                    elec.k_mg_rate = (mg_KCl / durationHours) / weight; 
+                    elec.k_mg_day = (mg_KCl * dailyMult) / weight; 
+
+                    // Sódio 
+                    const mEq_Na = (vNacl * 1.71) + (vNacl09 * 0.154) + (form.baseSolutionType === 'SF09' ? currentBase * 0.154 : 0);
+                    elec.na_day = (mEq_Na * dailyMult) / weight; 
+                    const mg_NaCl = (vNacl * 100) + (vNacl09 * 9) + (form.baseSolutionType === 'SF09' ? currentBase * 9 : 0);
+                    elec.na_mg_day = (mg_NaCl * dailyMult) / weight; 
+
+                    // Cálcio
+                    const mEq_Ca = vCa * 0.465;
+                    const mg_Ca_elementar = vCa * 9.31;
+                    const mg_Ca_gluconato = vCa * 97.9;
+                    elec.ca_elem_rate = (mg_Ca_elementar / durationHours) / weight; 
+                    elec.ca_mg_rate = (mg_Ca_gluconato / durationHours) / weight;
+                    elec.ca_day = (mEq_Ca * dailyMult) / weight; 
+                    elec.ca_mg_day = (mg_Ca_gluconato * dailyMult) / weight; 
+
+                    // Físico-Química
+                    elec.glicose_percent = currentConcentration / 10;
+                    elec.k_mEq_L = (mEq_K / currentTotalVolume) * 1000;
+                    
+                    const baseOsm = form.baseSolutionType === 'G5' ? 0.252 : (form.baseSolutionType === 'SF09' ? 0.308 : 0);
+                    const total_mOsm = (currentBase * baseOsm) + (currentG50 * 2.775) + (vCa * 0.683) + (vKcl * 2.682) + (vNacl * 3.422) + (vNacl09 * 0.308);
+                    
+                    elec.osmolarity = currentTotalVolume > 0 ? (total_mOsm / currentTotalVolume) * 1000 : 0;
+                }
+
+                setResults({
+                    totalVolume: currentTotalVolume,
+                    concentration: currentConcentration,
+                    tig: currentTig,
+                    glucoseMass: currentGlucoseMass,
+                    calcBase: currentBase,
+                    calcG50: currentG50,
+                    inverseError: currentInverseError,
+                    targetConc: currentTargetConc,
+                    vElec: vElec,
+                    vRem: currentVRem,
+                    elec: elec
+                });
+
+            }, [form, daysOfLife]);
+
+            // --- Handlers ---
+            const handleChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                if (type === 'checkbox') {
+                    setForm(prev => ({ ...prev, [name]: checked }));
+                } else if (type === 'radio') {
+                    setForm(prev => ({ ...prev, [name]: value }));
+                } else if (type === 'date') {
+                    setForm(prev => ({ ...prev, [name]: value }));
+                } else if (name === 'patientName' || name === 'prescriptionNumber' || name === 'rnType') {
+                    setForm(prev => ({ ...prev, [name]: value }));
+                } else if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setForm(prev => ({ ...prev, [name]: value }));
+                }
+            };
+
+            const handleModeToggle = (mode) => {
+                setForm(prev => ({ ...prev, calcMode: mode }));
+                setShowMath(false); 
+            };
+
+            const handleReset = () => {
+                setForm(initialFormState);
+                setEditingId(null);
+                setShowMath(false);
+            };
+
+            const cancelEdit = () => {
+                setForm(initialFormState);
+                setEditingId(null);
+                setShowMath(false);
+            };
+
+            const saveToHistory = () => {
+                if (results.tig === 0 || results.inverseError) return;
+
+                const finalDetails = { ...form, ...results };
+                if (form.calcMode === 'inverse') {
+                    finalDetails.volG5 = results.calcBase > 0 ? results.calcBase.toFixed(2) : 0;
+                    finalDetails.volG50 = results.calcG50 > 0 ? results.calcG50.toFixed(2) : 0;
+                } else {
+                    finalDetails.volG5 = parseFloat(form.volG5) || 0;
+                    finalDetails.volG50 = parseFloat(form.volG50) || 0;
+                }
+                
+                finalDetails.daysOfLife = daysOfLife;
+
+                const newItem = {
+                    id: editingId || Date.now(),
+                    timestamp: editingId ? history.find(h => h.id === editingId).timestamp : new Date().toLocaleString('pt-PT'),
+                    patientName: form.patientName || 'Paciente Sem Nome',
+                    tig: results.tig,
+                    details: finalDetails,
+                    materials: calculateMaterials(finalDetails)
+                };
+
+                if (editingId) {
+                    setHistory(prev => prev.map(item => item.id === editingId ? newItem : item));
+                    setEditingId(null);
+                    setForm(initialFormState);
+                    alert("Prescrição atualizada com sucesso!");
+                } else {
+                    setHistory(prev => [newItem, ...prev]);
+                }
+                setShowMath(false);
+            };
+
+            const deleteHistoryItem = (id) => {
+                if(confirm('Tem a certeza que deseja excluir este registo?')) setHistory(prev => prev.filter(item => item.id !== id));
+            };
+
+            const handleEdit = (entry) => {
+                setForm({
+                    patientName: entry.details.patientName || '',
+                    ageInputMode: entry.details.ageInputMode || 'dob',
+                    birthDate: entry.details.birthDate || '',
+                    daysOfLifeInput: entry.details.daysOfLifeInput || '',
+                    prescriptionNumber: entry.details.prescriptionNumber || '',
+                    weight: entry.details.weight,
+                    rate: entry.details.rate,
+                    volG5: entry.details.volG5,
+                    volG50: entry.details.volG50,
+                    volCa: entry.details.volCa,
+                    volKcl: entry.details.volKcl,
+                    volNacl: entry.details.volNacl,
+                    volNacl09: entry.details.volNacl09 || '',
+                    baseSolutionType: entry.details.baseSolutionType || 'G5',
+                    calcMode: entry.details.calcMode || 'forward', 
+                    targetTig: entry.details.targetTig || '',
+                    targetVolume: entry.details.totalVolume || '100',
+                    rnType: entry.details.rnType || 'RNT',
+                    photoTherapy: entry.details.photoTherapy || false,
+                    radiantWarmer: entry.details.radiantWarmer || false,
+                    humidifiedIncubator: entry.details.humidifiedIncubator || false,
+                    accessType: entry.details.accessType || 'periferico'
+                });
+                setEditingId(entry.id);
+                setShowHistory(false);
+                setShowMath(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const getStatus = (tig) => {
+                if (tig === 0) return { color: 'text-gray-400', bg: 'bg-gray-100', icon: null, text: '---' };
+                if (tig < 4) return { color: 'text-amber-600', bg: 'bg-amber-50', icon: <AlertTriangle className="w-4 h-4" />, text: 'Baixa (<4)' };
+                if (tig > 12) return { color: 'text-orange-600', bg: 'bg-orange-50', icon: <AlertTriangle className="w-4 h-4" />, text: 'Alta (>12)' };
+                return { color: 'text-emerald-600', bg: 'bg-emerald-50', icon: <CheckCircle className="w-4 h-4" />, text: 'Normal (4-8)' };
+            };
+
+            const status = getStatus(results.tig);
+            const baseLabel = form.baseSolutionType === 'SF09' ? 'SF 0,9%' : form.baseSolutionType === 'ABD' ? 'ABD' : 'Glicose 5%';
+            const cBase = form.baseSolutionType === 'G5' ? 50 : 0;
+
+            const duracaoHoras = (form.rate > 0 && results.totalVolume > 0) ? (results.totalVolume / form.rate) : 0;
+            const multiplicadorDiario = duracaoHoras > 0 ? (24 / duracaoHoras) : 0;
+            const isDurationShort = duracaoHoras > 0 && duracaoHoras < 23.5;
+
+            const e = results.elec;
+            const daysLife = daysOfLife !== null ? daysOfLife : 3; 
+            
+            const isNaEarly = daysLife <= 2 && e.na_day > 0;
+            const isKEarly = daysLife <= 2 && e.k_day > 0;
+            
+            const isGlicoseHigh = form.accessType === 'periferico' && e.glicose_percent > 12.5;
+            const isKConcHigh = form.accessType === 'periferico' && e.k_mEq_L > 40;
+            const isOsmolHigh = form.accessType === 'periferico' && e.osmolarity > 900;
+            const isOsmolWarn = form.accessType === 'periferico' && e.osmolarity > 600 && e.osmolarity <= 900;
+            
+            const hasDanger = e.k_rate > 0.5 || e.na_day > 6 || e.ca_elem_rate > 11 || e.ca_day > 4 || isGlicoseHigh || isKConcHigh || isOsmolHigh;
+            const hasWarning = (e.k_rate >= 0.4 && e.k_rate <= 0.5) || (e.k_day > 2 && e.k_day <= 4) || (e.na_day > 4 && e.na_day <= 6) || (e.ca_elem_rate >= 9 && e.ca_elem_rate <= 11) || (e.ca_day > 2 && e.ca_day <= 4) || isNaEarly || isKEarly || isOsmolWarn || (form.accessType === 'periferico' && parseFloat(form.volCa) > 0);
+
+            // --- LÓGICA DO VOLUME HÍDRICO TOTAL (VHT) ---
+            const daysVHT = daysOfLife || 1;
+            let baseVht = 65;
+            let maxVht = 150;
+            if (form.rnType === 'RNPT_maior') { baseVht = 75; maxVht = 150; }
+            if (form.rnType === 'RNPT_menor') { baseVht = 90; maxVht = 170; }
+
+            let recommendedVht = baseVht + ((daysVHT - 1) * 15);
+            if (recommendedVht > maxVht) recommendedVht = maxVht;
+
+            let modifier = 1;
+            if (form.photoTherapy) modifier += 0.15; 
+            if (form.radiantWarmer) modifier += 0.20; 
+            if (form.humidifiedIncubator) modifier -= 0.10;
+
+            recommendedVht = Math.round(recommendedVht * modifier);
+            const recommendedDailyVol = parseFloat(form.weight) > 0 ? Math.round(recommendedVht * parseFloat(form.weight)) : 0;
+            const recommendedRate = recommendedDailyVol > 0 ? (recommendedDailyVol / 24).toFixed(1) : 0;
+
+            const aplicarVHT = () => {
+                if (recommendedRate > 0) {
+                    setForm(prev => ({ 
+                        ...prev, 
+                        rate: recommendedRate.toString(),
+                        targetVolume: recommendedDailyVol.toString()
+                    }));
+                    alert(`VHT Aplicado! \nVelocidade: ${recommendedRate} ml/h \nVolume Total: ${recommendedDailyVol} ml (Para 24 horas de infusão).`);
+                }
+            };
+
+            const baseOsmMath = form.baseSolutionType === 'G5' ? 0.252 : (form.baseSolutionType === 'SF09' ? 0.308 : 0);
+
+            // --- VISTA: CALCULADORA PRINCIPAL ---
+            return (
+                <div className="min-h-screen font-sans text-slate-800 p-4 md:p-8 flex justify-center items-start">
+                    <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        
+                        {/* Coluna Principal */}
+                        <div className={`bg-white rounded-2xl shadow-xl overflow-hidden border flex flex-col transition-all duration-300 ${showHistory ? 'lg:col-span-8' : 'lg:col-span-12 max-w-4xl mx-auto w-full'} ${editingId ? 'border-orange-300 ring-2 ring-orange-100' : 'border-emerald-100'}`}>
+                            
+                            <header className={`p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors duration-300 ${editingId ? 'bg-orange-500 text-white' : 'bg-gradient-to-r from-emerald-800 to-teal-600 text-white'}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white/20 rounded-lg shadow-sm"><Hospital className="w-7 h-7 text-white" /></div>
+                                    <div>
+                                        <h1 className="text-2xl font-bold tracking-tight">{editingId ? 'A Editar Prescrição' : 'Calculadora de TIG Neonatal'}</h1>
+                                        <p className={`text-xs mt-0.5 font-medium ${editingId ? 'text-orange-100' : 'text-emerald-100'}`}>
+                                            {editingId ? 'Atualize os valores abaixo' : (
+                                                <span>Desenvolvido pelo farmacêutico <a href="https://www.linkedin.com/in/abmael-andrade-11108a182/" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-white underline decoration-emerald-400/50 hover:decoration-white transition-all">Abmael Andrade</a></span>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {editingId && <button onClick={cancelEdit} className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-md text-sm transition-colors text-white"><X className="w-4 h-4" /> Cancelar</button>}
+                                    {!editingId && <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-md text-sm transition-colors text-white/90 shadow-sm"><History className="w-4 h-4" /><span className="hidden sm:inline">Histórico</span><span className="bg-white/20 px-1.5 rounded text-xs font-bold">{history.length}</span></button>}
+                                    <button onClick={handleReset} className="flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-md text-sm transition-colors text-white/90 shadow-sm"><RotateCcw className="w-4 h-4" /> Limpar</button>
+                                </div>
+                            </header>
+
+                            <main className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    
+                                    {/* Abas de Modo de Cálculo */}
+                                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                                        <button onClick={() => handleModeToggle('forward')} className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${form.calcMode === 'forward' ? 'bg-white shadow-sm text-emerald-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                                            Modo Validador <span className="block text-[10px] font-normal text-slate-400">Verificar bolsa já prescrita</span>
+                                        </button>
+                                        <button onClick={() => handleModeToggle('inverse')} className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${form.calcMode === 'inverse' ? 'bg-white shadow-sm text-teal-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                                            Modo Prescritor <span className="block text-[10px] font-normal text-slate-400">Prescrever pela TIG Alvo</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Informações do Paciente */}
+                                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${form.calcMode === 'forward' ? 'md:grid-cols-3' : ''} gap-4`}>
+                                        <div className={`flex flex-col justify-end ${form.calcMode === 'forward' ? 'sm:col-span-2 md:col-span-1' : 'sm:col-span-1'}`}>
+                                            <div className="flex justify-between items-end mb-2 h-7">
+                                                <label className="text-sm font-medium text-slate-700 flex items-center gap-1"><User className="w-4 h-4 text-emerald-500" /> Paciente</label>
+                                            </div>
+                                            <input type="text" name="patientName" value={form.patientName} onChange={handleChange} placeholder="Nome do Paciente" className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-colors" />
+                                        </div>
+                                        <div className="flex flex-col justify-end sm:col-span-1">
+                                            <div className="flex justify-between items-end mb-2 h-7">
+                                                <div className="flex items-center gap-2 pb-0.5">
+                                                    <label className="text-sm font-medium text-slate-700 flex items-center gap-1"><Calendar className="w-4 h-4 text-emerald-500" /> Idade</label>
+                                                    {form.ageInputMode === 'dob' && calculatedDays !== null && (
+                                                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shadow-sm">{calculatedDays} dias</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex bg-slate-100 p-0.5 rounded text-[10px] font-medium">
+                                                    <button type="button" onClick={() => setForm(prev => ({...prev, ageInputMode: 'dob'}))} className={`px-2 py-1 rounded transition-colors ${form.ageInputMode === 'dob' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:bg-slate-200'}`}>Data Nasc.</button>
+                                                    <button type="button" onClick={() => setForm(prev => ({...prev, ageInputMode: 'days'}))} className={`px-2 py-1 rounded transition-colors ${form.ageInputMode === 'days' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:bg-slate-200'}`}>Dias Vida</button>
+                                                </div>
+                                            </div>
+                                            {form.ageInputMode === 'days' ? (
+                                                <div className="relative">
+                                                    <input type="number" name="daysOfLifeInput" value={form.daysOfLifeInput} onChange={handleChange} placeholder="Ex: 3" min="0" className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-colors pr-12" />
+                                                    <span className="absolute right-3 top-2.5 text-sm text-slate-400 pointer-events-none">dias</span>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <input type="date" name="birthDate" value={form.birthDate} onChange={handleChange} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-colors" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {/* Campo "Prescrição Nº" visível APENAS no Modo Validador */}
+                                        {form.calcMode === 'forward' && (
+                                            <div className="flex flex-col justify-end sm:col-span-1 mt-4 md:mt-0">
+                                                <div className="flex justify-between items-end mb-2 h-7">
+                                                    <label className="text-sm font-medium text-slate-700 flex items-center gap-1"><Hash className="w-4 h-4 text-emerald-500" /> Prescrição Nº</label>
+                                                </div>
+                                                <input type="text" name="prescriptionNumber" value={form.prescriptionNumber} onChange={handleChange} placeholder="Ex: 12345" className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-colors" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Ferramenta VHT */}
+                                    <section className="bg-emerald-50/50 rounded-xl border border-emerald-100 overflow-hidden">
+                                        <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-emerald-100/50 transition-colors" onClick={() => setShowVHT(!showVHT)}>
+                                            <h2 className="text-sm font-bold text-emerald-800 flex items-center gap-2">
+                                                <ActivityLine className="w-4 h-4"/> 1. Determinação do Volume Hídrico (VHT)
+                                            </h2>
+                                            {showVHT ? <ChevronUp className="w-4 h-4 text-emerald-600"/> : <ChevronDown className="w-4 h-4 text-emerald-600"/>}
+                                        </div>
+                                        
+                                        {showVHT && (
+                                            <div className="p-4 pt-0 space-y-4">
+                                                <div className="text-xs text-emerald-800 bg-white p-3 rounded-lg border border-emerald-100 shadow-sm leading-relaxed">
+                                                    <strong>Diretriz Clínica:</strong><br/>
+                                                    O VHT inicial depende do peso ao nascer e da idade gestacional, ajustando-se diariamente (+10 a 20 mL/kg/dia).<br/>
+                                                    • <strong>RNT:</strong> Iniciar com 60 a 70 mL/kg/dia. (Máx: 150)<br/>
+                                                    • <strong>RNPT &gt; 1500g:</strong> Iniciar com 70 a 80 mL/kg/dia. (Máx: 150)<br/>
+                                                    • <strong>RNPT &lt; 1500g:</strong> Iniciar com 80 a 100 mL/kg/dia. (Máx: 160-180)<br/>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Classificação do RN:</label>
+                                                    <div className="flex bg-white rounded-lg border border-slate-200 overflow-hidden text-xs font-medium shadow-sm">
+                                                        <label className={`flex-1 text-center py-2 cursor-pointer transition-colors ${form.rnType === 'RNT' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                                                            <input type="radio" name="rnType" value="RNT" checked={form.rnType === 'RNT'} onChange={handleChange} className="hidden" /> A Termo (RNT)
+                                                        </label>
+                                                        <label className={`flex-1 text-center py-2 cursor-pointer border-l border-r border-slate-200 transition-colors ${form.rnType === 'RNPT_maior' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                                                            <input type="radio" name="rnType" value="RNPT_maior" checked={form.rnType === 'RNPT_maior'} onChange={handleChange} className="hidden" /> RNPT &gt; 1500g
+                                                        </label>
+                                                        <label className={`flex-1 text-center py-2 cursor-pointer transition-colors ${form.rnType === 'RNPT_menor' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                                                            <input type="radio" name="rnType" value="RNPT_menor" checked={form.rnType === 'RNPT_menor'} onChange={handleChange} className="hidden" /> RNPT &lt; 1500g
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Correções (Perdas Insensíveis):</label>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        <label className="flex items-center gap-2 text-sm text-slate-700 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-emerald-300 shadow-sm">
+                                                            <input type="checkbox" name="photoTherapy" checked={form.photoTherapy} onChange={handleChange} className="text-emerald-600 focus:ring-emerald-500 rounded" /> 
+                                                            <span className="flex-1">Fototerapia <span className="text-xs text-slate-400 font-bold">(+15%)</span></span>
+                                                        </label>
+                                                        <label className="flex items-center gap-2 text-sm text-slate-700 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-emerald-300 shadow-sm">
+                                                            <input type="checkbox" name="radiantWarmer" checked={form.radiantWarmer} onChange={handleChange} className="text-emerald-600 focus:ring-emerald-500 rounded" /> 
+                                                            <span className="flex-1">Berço Radiante <span className="text-xs text-slate-400 font-bold">(+20%)</span></span>
+                                                        </label>
+                                                        <label className="flex items-center gap-2 text-sm text-slate-700 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-emerald-300 shadow-sm sm:col-span-2">
+                                                            <input type="checkbox" name="humidifiedIncubator" checked={form.humidifiedIncubator} onChange={handleChange} className="text-emerald-600 focus:ring-emerald-500 rounded" /> 
+                                                            <span className="flex-1">Incubadora Umidificada <span className="text-xs text-slate-400 font-bold">(-10%)</span></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-white p-4 rounded-lg border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                                                    <div>
+                                                        <p className="text-xs text-emerald-600 uppercase tracking-wider font-bold mb-1">VHT Calculado ({daysVHT}º dia):</p>
+                                                        <div className="text-2xl font-black text-emerald-800">{recommendedVht} <span className="text-sm font-medium text-slate-500">mL/kg/dia</span></div>
+                                                        {parseFloat(form.weight) > 0 ? (
+                                                            <p className="text-xs text-slate-600 mt-1">Total Diário: <strong>{recommendedDailyVol} mL</strong> | Vel: <strong>{recommendedRate} mL/h</strong></p>
+                                                        ) : (
+                                                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1"><Info className="w-3 h-3"/> Insira o peso para obter a velocidade.</p>
+                                                        )}
+                                                    </div>
+                                                    <button 
+                                                        onClick={aplicarVHT}
+                                                        disabled={recommendedRate <= 0}
+                                                        className="w-full sm:w-auto px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                                    >
+                                                        Aplicar VHT (Para 24h)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    <section className={`p-4 rounded-xl border-2 transition-colors ${form.calcMode === 'inverse' ? 'border-teal-200 bg-teal-50/20' : 'border-transparent bg-white shadow-sm'}`}>
+                                        <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                                            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                                                {form.calcMode === 'inverse' ? <Target className="w-4 h-4 text-teal-600" /> : <Activity className="w-4 h-4 text-emerald-500" />}
+                                                Parâmetros Clínicos
+                                            </h2>
+                                            
+                                            {/* Via de Acesso Venoso */}
+                                            <div className="flex bg-slate-100 p-0.5 rounded-md text-xs border border-slate-200 shadow-inner">
+                                                <label className={`cursor-pointer px-2 py-1 rounded transition-colors ${form.accessType === 'periferico' ? 'bg-white shadow text-emerald-800 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}>
+                                                    <input type="radio" name="accessType" value="periferico" checked={form.accessType === 'periferico'} onChange={handleChange} className="hidden"/> Periférico
+                                                </label>
+                                                <label className={`cursor-pointer px-2 py-1 rounded transition-colors ${form.accessType === 'central' ? 'bg-white shadow text-emerald-800 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}>
+                                                    <input type="radio" name="accessType" value="central" checked={form.accessType === 'central'} onChange={handleChange} className="hidden"/> Central
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <InputField label="Peso" name="weight" value={form.weight} onChange={handleChange} unit="kg" icon={<Scale className="w-4 h-4 text-emerald-500" />} required />
+                                            <InputField label="Velocidade" name="rate" value={form.rate} onChange={handleChange} unit="ml/h" icon={<Activity className="w-4 h-4 text-emerald-500" />} />
+                                            
+                                            {form.calcMode === 'inverse' && (
+                                                <>
+                                                    <InputField label="TIG Alvo" name="targetTig" value={form.targetTig} onChange={handleChange} unit="mg/kg" icon={<Target className="w-4 h-4 text-teal-500" />} required />
+                                                    <InputField label="Vol. Total da Bolsa" name="targetVolume" value={form.targetVolume} onChange={handleChange} unit="ml" icon={<Beaker className="w-4 h-4 text-teal-500" />} required />
+                                                </>
+                                            )}
+                                        </div>
+                                    </section>
+
+                                    <section className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                        <div className="flex flex-col gap-3 mb-4 border-b border-slate-100 pb-3">
+                                            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-600 uppercase tracking-wider"><Syringe className="w-4 h-4 text-emerald-500" /> Solução Base</h2>
+                                            
+                                            {/* Toggle Solução Base com 3 opções */}
+                                            <div className="flex bg-slate-100 p-0.5 rounded-md text-xs w-full shadow-inner border border-slate-200">
+                                                <label className={`flex-1 text-center cursor-pointer px-2 py-1.5 rounded transition-all ${form.baseSolutionType === 'G5' ? 'bg-white shadow text-emerald-800 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}>
+                                                    <input type="radio" name="baseSolutionType" value="G5" checked={form.baseSolutionType === 'G5'} onChange={handleChange} className="hidden"/> Glicose 5%
+                                                </label>
+                                                <label className={`flex-1 text-center cursor-pointer px-2 py-1.5 rounded transition-all ${form.baseSolutionType === 'SF09' ? 'bg-white shadow text-emerald-800 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}>
+                                                    <input type="radio" name="baseSolutionType" value="SF09" checked={form.baseSolutionType === 'SF09'} onChange={handleChange} className="hidden"/> SF 0,9%
+                                                </label>
+                                                <label className={`flex-1 text-center cursor-pointer px-2 py-1.5 rounded transition-all ${form.baseSolutionType === 'ABD' ? 'bg-white shadow text-emerald-800 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}>
+                                                    <input type="radio" name="baseSolutionType" value="ABD" checked={form.baseSolutionType === 'ABD'} onChange={handleChange} className="hidden"/> ABD
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {form.calcMode === 'forward' ? (
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <InputField label={baseLabel} name="volG5" value={form.volG5} onChange={handleChange} unit="ml" subLabel={getSubLabel(form.baseSolutionType)} isGlucose={form.baseSolutionType === 'G5'} />
+                                                    <InputField label="Glicose 50%" name="volG50" value={form.volG50} onChange={handleChange} unit="ml" subLabel={getSubLabel('G50')} isGlucose />
+                                                </div>
+                                            ) : (
+                                                <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg text-sm text-teal-800 flex items-start gap-3">
+                                                    <Target className="w-6 h-6 text-teal-600 flex-shrink-0" />
+                                                    <div>
+                                                        <strong className="block mb-1 text-teal-900">Preparo Automático</strong>
+                                                        O sistema calculará o volume exato da Solução Base ({baseLabel}) e da Glicose 50% necessários para atingir a sua TIG Alvo. Avance para a secção de eletrólitos abaixo.
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                                                    <p className="text-sm font-semibold text-slate-700 flex items-center gap-1"><Beaker className="w-4 h-4 text-emerald-600" /> Eletrólitos Adicionais</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Referência:</span>
+                                                        <div className="flex bg-slate-200/70 p-0.5 rounded text-[10px] font-medium border border-slate-300/50 shadow-inner">
+                                                            <button type="button" onClick={() => setRefUnit('mEq')} className={`px-2 py-1 rounded transition-colors ${refUnit === 'mEq' ? 'bg-white shadow text-emerald-800' : 'text-slate-500 hover:bg-slate-300'}`}>mEq</button>
+                                                            <button type="button" onClick={() => setRefUnit('mg')} className={`px-2 py-1 rounded transition-colors ${refUnit === 'mg' ? 'bg-white shadow text-emerald-800' : 'text-slate-500 hover:bg-slate-300'}`}>mg</button>
+                                                            <button type="button" onClick={() => setRefUnit('mOsm')} className={`px-2 py-1 rounded transition-colors ${refUnit === 'mOsm' ? 'bg-white shadow text-emerald-800' : 'text-slate-500 hover:bg-slate-300'}`}>mOsm</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <InputField label="Ca 10%" name="volCa" value={form.volCa} onChange={handleChange} unit="ml" subLabel={getSubLabel('Ca')} />
+                                                    <InputField label="KCl 10%" name="volKcl" value={form.volKcl} onChange={handleChange} unit="ml" subLabel={getSubLabel('KCl')} />
+                                                    <InputField label="NaCl 10%" name="volNacl" value={form.volNacl} onChange={handleChange} unit="ml" subLabel={getSubLabel('NaCl')} />
+                                                    <InputField label="NaCl 0,9%" name="volNacl09" value={form.volNacl09} onChange={handleChange} unit="ml" subLabel={getSubLabel('NaCl09')} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <div className="flex flex-col gap-4">
+                                    
+                                    {/* Alerta de Erro Matemático no Inverso */}
+                                    {form.calcMode === 'inverse' && results.inverseError && (
+                                        <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm flex items-start gap-3 shadow-sm">
+                                            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <strong>Atenção:</strong> {results.inverseError}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Alerta de Duração da Bolsa (Modo Prescritor) */}
+                                    {form.calcMode === 'inverse' && isDurationShort && !results.inverseError && (
+                                        <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 text-sm flex items-start gap-3 shadow-sm">
+                                            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-600" />
+                                            <div>
+                                                <strong>Atenção (Duração da Bolsa):</strong> Com o volume de {results.totalVolume} ml e velocidade de {form.rate} ml/h, esta bolsa durará apenas <strong>{duracaoHoras.toFixed(1)} horas</strong>. Na prática clínica, recomenda-se que a bolsa tenha volume suficiente para durar pelo menos 24 horas.<br/><br/>
+                                                <span className="text-xs font-semibold bg-amber-100/80 px-2 py-1 rounded border border-amber-200">Sugestão: Para 24h, altere o Volume Total da Bolsa para pelo menos {Math.ceil(form.rate * 24)} ml (exato: {(form.rate * 24).toFixed(1)} ml).</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Card Principal */}
+                                    {form.calcMode === 'forward' ? (
+                                        <div className={`flex flex-col justify-center items-center p-6 rounded-xl border-2 transition-all duration-300 shadow-sm ${status.bg} ${status.color === 'text-slate-400' ? 'border-slate-200' : 'border-current'}`}>
+                                            <span className="text-xs font-semibold uppercase tracking-widest opacity-70 mb-1">TIG Calculada</span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className={`text-5xl font-black tracking-tighter ${status.color}`}>{results.tig.toFixed(2)}</span>
+                                                <span className={`text-base font-medium opacity-80 ${status.color}`}>mg/kg/min</span>
+                                            </div>
+                                            <div className={`flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 shadow-sm ${status.color}`}>
+                                                {status.icon} <span>{status.text}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-teal-700 text-white p-6 rounded-xl border border-teal-800 shadow-md">
+                                            <div className="flex justify-between items-center mb-4 border-b border-teal-600/50 pb-2">
+                                                <span className="text-xs text-teal-100 uppercase tracking-wider font-bold"><Syringe className="w-4 h-4 inline mr-1"/> Composição da Bolsa</span>
+                                                <span className="bg-teal-900 text-teal-100 text-[10px] px-2 py-1 rounded shadow-inner font-bold">TIG Alvo: {form.targetTig}</span>
+                                            </div>
+                                            <ul className="space-y-3 text-sm sm:text-base font-medium">
+                                                <li className="flex justify-between items-center">
+                                                    <span>{baseLabel}</span>
+                                                    <span className="font-bold text-lg">{results.calcBase > 0 ? results.calcBase.toFixed(1) : '0.0'} ml</span>
+                                                </li>
+                                                <li className="flex justify-between items-center">
+                                                    <span>Glicose 50%</span>
+                                                    <span className="font-bold text-lg">{results.calcG50 > 0 ? results.calcG50.toFixed(1) : '0.0'} ml</span>
+                                                </li>
+                                                {parseFloat(form.volCa) > 0 && (
+                                                    <li className="flex justify-between items-center text-teal-200">
+                                                        <span>Gliconato de Cálcio 10%</span>
+                                                        <span className="font-bold text-white">{form.volCa} ml</span>
+                                                    </li>
+                                                )}
+                                                {parseFloat(form.volKcl) > 0 && (
+                                                    <li className="flex justify-between items-center text-teal-200">
+                                                        <span>Cloreto de Potássio 10%</span>
+                                                        <span className="font-bold text-white">{form.volKcl} ml</span>
+                                                    </li>
+                                                )}
+                                                {parseFloat(form.volNacl) > 0 && (
+                                                    <li className="flex justify-between items-center text-teal-200">
+                                                        <span>Cloreto de Sódio 10%</span>
+                                                        <span className="font-bold text-white">{form.volNacl} ml</span>
+                                                    </li>
+                                                )}
+                                                {parseFloat(form.volNacl09) > 0 && (
+                                                    <li className="flex justify-between items-center text-teal-200">
+                                                        <span>Cloreto de Sódio 0,9%</span>
+                                                        <span className="font-bold text-white">{form.volNacl09} ml</span>
+                                                    </li>
+                                                )}
+                                            </ul>
+                                            <div className="mt-4 pt-3 border-t border-teal-600/50 flex justify-between items-center text-teal-100 text-sm">
+                                                <span>Volume Total: <strong className="text-white">{results.totalVolume.toFixed(1)} ml</strong></span>
+                                                <span>Velocidade: <strong className="text-white">{form.rate} ml/h</strong></span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* --- SOLICITAÇÃO À FARMÁCIA --- */}
+                                    {results.totalVolume > 0 && !results.inverseError && (
+                                        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl shadow-sm">
+                                            <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2 border-b border-emerald-200/50 pb-2">
+                                                <Beaker className="w-4 h-4 text-emerald-600" /> Solicitação à Farmácia
+                                            </h3>
+                                            <p className="text-xs text-emerald-600 mb-3 font-medium">Materiais a requisitar para o preparo desta bolsa:</p>
+                                            <ul className="space-y-1 text-sm font-medium text-emerald-900">
+                                                {calculateMaterials({...form, volG5: form.calcMode === 'inverse' ? results.calcBase : form.volG5, volG50: form.calcMode === 'inverse' ? results.calcG50 : form.volG50}).map((mat, i) => (
+                                                    <li key={i} className="flex items-start gap-2">
+                                                        <span className="mt-0.5 text-emerald-500">•</span> 
+                                                        <span><strong className="text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-1.5 py-0.5 rounded shadow-sm">{mat.qtd}x</strong> {mat.name}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* --- SEGURANÇA ELETROLÍTICA E FÍSICO-QUÍMICA --- */}
+                                    {results.totalVolume > 0 && form.weight > 0 && !results.inverseError && (
+                                        <div className={`p-4 rounded-xl border-2 transition-all shadow-sm ${hasDanger ? 'bg-red-50 border-red-300' : hasWarning ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200'}`}>
+                                            <h3 className={`flex items-center gap-2 text-sm font-bold uppercase tracking-wider mb-3 ${hasDanger ? 'text-red-700' : hasWarning ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                                <ShieldAlert className="w-4 h-4" /> 
+                                                Segurança e Limites Clínicos
+                                            </h3>
+                                            
+                                            {/* Físico-Química e Risco de Flebite */}
+                                            {form.accessType === 'periferico' && (
+                                            <div className="mb-3 bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-inner">
+                                                <p className="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Físico-Química (Via Periférica)</p>
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center text-[10px] text-slate-600">
+                                                        <span>Osmolaridade (Máx: 900 mOsm/L):</span>
+                                                        <span className={`font-bold ${isOsmolHigh ? 'text-red-600' : isOsmolWarn ? 'text-amber-600' : 'text-emerald-700'}`}>{e.osmolarity.toFixed(0)} mOsm/L</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[10px] text-slate-600">
+                                                        <span>Concentração Glicose (Máx: 12,5%):</span>
+                                                        <span className={`font-bold ${isGlicoseHigh ? 'text-red-600' : 'text-emerald-700'}`}>{e.glicose_percent.toFixed(1)}%</span>
+                                                    </div>
+                                                    {e.k_day > 0 && (
+                                                    <div className="flex justify-between items-center text-[10px] text-slate-600">
+                                                        <span>Conc. Potássio (Máx: 40 mEq/L):</span>
+                                                        <span className={`font-bold ${isKConcHigh ? 'text-red-600' : 'text-emerald-700'}`}>{e.k_mEq_L.toFixed(1)} mEq/L</span>
+                                                    </div>
+                                                    )}
+                                                </div>
+                                                {isOsmolHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Osmolaridade > 900 mOsm/L requer acesso venoso central (PICC/CVC).</p>}
+                                                {isOsmolWarn && !isOsmolHigh && <p className="text-[10px] text-amber-700 font-bold mt-2 bg-amber-100 border border-amber-200 p-1.5 rounded">Atenção: Osmolaridade > 600 mOsm/L reduz tempo de vida do acesso periférico.</p>}
+                                                {isGlicoseHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Glicose > 12,5% em acesso periférico causa flebite grave.</p>}
+                                                {isKConcHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Potássio > 40 mEq/L. Risco de flebite química e dor intensa.</p>}
+                                            </div>
+                                            )}
+
+                                            {/* Potássio */}
+                                            <div className="mb-2">
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                                                    <span>Potássio (KCl 10%)</span>
+                                                    <span className={e.k_rate > 0.5 ? 'text-red-600' : e.k_rate >= 0.4 ? 'text-amber-600' : 'text-emerald-600'}>
+                                                        Infusão: {refUnit === 'mEq' ? `${e.k_rate.toFixed(2)} mEq/kg/h` : `${e.k_mg_rate.toFixed(1)} mg/kg/h (KCl)`}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
+                                                    <span>Recomendado: {refUnit === 'mEq' ? '1 a 2 mEq/kg/dia' : '75 a 150 mg/kg/dia (KCl)'}</span>
+                                                    <span className={`font-semibold ${e.k_day > 2 ? 'text-amber-600' : e.k_day > 4 ? 'text-red-600' : 'text-slate-600'}`}>
+                                                        A receber: {refUnit === 'mEq' ? `${e.k_day.toFixed(1)} mEq/kg/dia` : `${e.k_mg_day.toFixed(0)} mg/kg/dia (KCl)`}
+                                                    </span>
+                                                </div>
+                                                {isKEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Aviso: K+ não recomendado antes das 48-72h e diurese bem estabelecida.</p>}
+                                                {e.k_rate > 0.5 && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100/80 p-1 rounded">ALERTA: Infusão > 0.5 mEq/kg/h. Risco de paragem cardíaca!</p>}
+                                            </div>
+
+                                            {/* Sódio */}
+                                            <div className="mb-2 border-t border-slate-200/60 pt-2">
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                                                    <span>Sódio (Total NaCl)</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
+                                                    <span>Recomendado: {refUnit === 'mEq' ? '2 a 4 mEq/kg/dia' : '117 a 234 mg/kg/dia (NaCl)'}</span>
+                                                    <span className={`font-semibold ${e.na_day > 4 ? 'text-amber-600' : e.na_day > 6 ? 'text-red-600' : 'text-slate-600'}`}>
+                                                        A receber: {refUnit === 'mEq' ? `${e.na_day.toFixed(1)} mEq/kg/dia` : `${e.na_mg_day.toFixed(0)} mg/kg/dia (NaCl)`}
+                                                    </span>
+                                                </div>
+                                                {isNaEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Aviso: Na+ não recomendado no 1º/2º dia, aguardar perda de peso fisiológica e diurese.</p>}
+                                            </div>
+
+                                            {/* Cálcio */}
+                                            <div className="border-t border-slate-200/60 pt-2">
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                                                    <span>Cálcio (Gliconato 10%)</span>
+                                                    <span className={e.ca_elem_rate > 11 ? 'text-red-600' : e.ca_elem_rate >= 9 ? 'text-amber-600' : 'text-emerald-600'}>
+                                                        Infusão: {e.ca_elem_rate.toFixed(1)} mg/kg/h (Elementar)
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
+                                                    <span>Recomendado: {refUnit === 'mEq' ? '1 a 2 mEq/kg/dia' : '20 a 40 mg/kg/dia (Elem.)'}</span>
+                                                    <span className={`font-semibold ${e.ca_day > 2 ? 'text-amber-600' : e.ca_day > 4 ? 'text-red-600' : 'text-slate-600'}`}>
+                                                        A receber: {refUnit === 'mEq' ? `${e.ca_day.toFixed(1)} mEq/kg/dia` : `${e.ca_mg_day.toFixed(1)} mg/kg/dia (Elem.)`}
+                                                    </span>
+                                                </div>
+                                                {e.ca_elem_rate > 11 && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100/80 p-1 rounded">ALERTA: Infusão de cálcio elementar excedeu o limite de segurança!</p>}
+                                                {form.accessType === 'periferico' && parseFloat(form.volCa) > 0 && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100 border border-amber-200 p-1.5 rounded">Atenção (Periférico): O extravasamento de cálcio causa necrose tecidual severa. Nunca misture com Bicarbonato ou Fosfato.</p>}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* --- EXPLICAÇÃO MATEMÁTICA COMPLETAS --- */}
+                                    {(results.totalVolume > 0 && form.weight > 0) && (
+                                        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                            <button 
+                                                onClick={() => setShowMath(!showMath)}
+                                                className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors text-sm font-bold text-emerald-800 border-b border-transparent"
+                                            >
+                                                <span className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-emerald-600"/> Ver passo a passo do cálculo</span>
+                                                {showMath ? <ChevronUp className="w-4 h-4 text-emerald-600" /> : <ChevronDown className="w-4 h-4 text-emerald-600" />}
+                                            </button>
+                                            
+                                            {showMath && (
+                                                <div className="p-5 bg-white text-xs font-mono text-slate-600 space-y-4 border-t border-slate-200 overflow-x-auto">
+                                                    {/* SEÇÃO 1: TIG */}
+                                                    <h4 className="font-bold text-emerald-900 flex items-center gap-1"><Activity className="w-4 h-4 text-emerald-600" /> Cálculos da TIG</h4>
+                                                    {form.calcMode === 'forward' ? (
+                                                        <>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">1. Massa de Glicose (mg)</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= (Vol Base x {cBase}mg/ml) + (Vol G50% x 500mg/ml)</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({results.calcBase} x {cBase}) + ({results.calcG50} x 500) = <strong className="text-emerald-700">{results.glucoseMass.toFixed(0)} mg</strong></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">2. Volume Total (ml)</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= Vol Base + Vol G50% + Eletrólitos</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.calcBase} + {results.calcG50} + {results.vElec} = <strong className="text-emerald-700">{results.totalVolume.toFixed(1)} ml</strong></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">3. Concentração (mg/ml)</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= Massa / Volume Total</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.glucoseMass.toFixed(0)} / {results.totalVolume.toFixed(1)} = <strong className="text-emerald-700">{results.concentration.toFixed(2)} mg/ml</strong></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">4. TIG (mg/kg/min)</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= (Concentração x Velocidade) / (Peso x 60 min)</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({results.concentration.toFixed(2)} x {form.rate || 0}) / ({form.weight} x 60) = <strong className="text-emerald-700">{results.tig.toFixed(2)}</strong></p>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">1. Concentração Alvo Necessária (mg/ml)</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= (TIG Alvo x Peso x 60) / Velocidade</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({form.targetTig} x {form.weight} x 60) / {form.rate || 1} = <strong className="text-teal-700">{results.targetConc.toFixed(2)} mg/ml</strong></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">2. Massa Total Alvo (mg)</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= Concentração Alvo x Volume Total</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.targetConc.toFixed(2)} x {results.totalVolume} = <strong className="text-teal-700">{((results.targetConc * results.totalVolume)).toFixed(0)} mg</strong></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">3. Volume Restante p/ Glicose (ml)</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= Volume Total - Eletrólitos</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.totalVolume} - {results.vElec} = <strong className="text-teal-700">{results.vRem.toFixed(1)} ml</strong></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">4. Álgebra: Encontrar Volume de G50%</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= (Massa Total - (Vol Restante x Conc. Base)) / (500 - Conc. Base)</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((results.targetConc * results.totalVolume)).toFixed(0)} - ({results.vRem.toFixed(1)} x {cBase})) / (500 - {cBase}) = <strong className="text-teal-700">{results.calcG50.toFixed(2)} ml</strong></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 mb-1">5. Volume da Solução Base ({baseLabel})</p>
+                                                                <p className="text-[10px] text-slate-400 mb-1">= Volume Restante - Vol G50%</p>
+                                                                <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.vRem.toFixed(1)} - {results.calcG50.toFixed(2)} = <strong className="text-teal-700">{results.calcBase.toFixed(2)} ml</strong></p>
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                    {/* SEÇÃO 2: ELETRÓLITOS */}
+                                                    {(parseFloat(form.rate) > 0) && (
+                                                    <div className="mt-6 pt-4 border-t border-slate-200 space-y-4">
+                                                        <h4 className="font-bold text-emerald-900 flex items-center gap-1"><ShieldAlert className="w-4 h-4 text-emerald-600" /> Físico-Química e Segurança</h4>
+                                                        
+                                                        <div className="mb-2">
+                                                            <p className="font-bold text-slate-700 mb-1">A. Osmolaridade da Bolsa (mOsm/L)</p>
+                                                            <p className="text-[10px] text-slate-400 mb-1">Cálculo Exato Baseado nas Bulas (Total mOsm / Volume Total)</p>
+                                                            <p className="bg-slate-50 p-2 rounded border border-slate-100 text-[10px] leading-relaxed">
+                                                                mOsm = (Base x {baseOsmMath}) + (G50% x 2,775) + (NaCl10% x 3,422) + (KCl10% x 2,682) + (Ca10% x 0,683) + (NaCl0,9% x 0,308)<br/>
+                                                                = <strong className="text-emerald-700 text-xs">{e.osmolarity.toFixed(0)} mOsm/L</strong>
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="mb-2">
+                                                            <p className="font-bold text-slate-700 mb-1">B. Duração da Infusão e Fator Diário</p>
+                                                            <p className="text-[10px] text-slate-400 mb-1">Tempo (h) = Vol Total / Velocidade</p>
+                                                            <p className="bg-slate-50 p-2 rounded border border-slate-100">= {results.totalVolume.toFixed(1)} / {form.rate} = <strong className="text-slate-700">{duracaoHoras.toFixed(1)} horas</strong></p>
+                                                            <p className="text-[10px] text-slate-400 mt-1 mb-1">Multiplicador Diário = 24h / Tempo</p>
+                                                            <p className="bg-slate-50 p-2 rounded border border-slate-100">= 24 / {duracaoHoras.toFixed(1)} = <strong className="text-slate-700">{multiplicadorDiario.toFixed(2)}</strong></p>
+                                                        </div>
+
+                                                        {parseFloat(form.volKcl) > 0 && (
+                                                        <div className="mb-2">
+                                                            <p className="font-bold text-slate-700 mb-1">C. Potássio (KCl 10%)</p>
+                                                            {refUnit === 'mEq' ? (
+                                                                <>
+                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq K = Vol KCl x 1,34 mEq/mL</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= {form.volKcl} x 1,34 = <strong>{(form.volKcl * 1.34).toFixed(2)} mEq</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão (mEq/kg/h) = (mEq K / Tempo) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 1.34).toFixed(2)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{e.k_rate.toFixed(2)} mEq/kg/h</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mEq/kg/dia) = (mEq K * Mult. Diário) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 1.34).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.k_day.toFixed(2)} mEq/kg/dia</strong></p>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="text-[10px] text-slate-400 mb-1">mg KCl = Vol KCl x 100 mg/mL</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= {form.volKcl} x 100 = <strong>{(form.volKcl * 100).toFixed(0)} mg</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão (mg/kg/h) = (mg KCl / Tempo) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 100).toFixed(0)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{e.k_mg_rate.toFixed(1)} mg/kg/h</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mg/kg/dia) = (mg KCl * Mult. Diário) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volKcl * 100).toFixed(0)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.k_mg_day.toFixed(0)} mg/kg/dia</strong></p>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        )}
+
+                                                        {(parseFloat(form.volNacl) > 0 || parseFloat(form.volNacl09) > 0 || form.baseSolutionType === 'SF09') && (
+                                                        <div className="mb-2">
+                                                            <p className="font-bold text-slate-700 mb-1">D. Sódio Total</p>
+                                                            {refUnit === 'mEq' ? (
+                                                                <>
+                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq Na = (NaCl 10% x 1,71) + (NaCl 0,9% x 0,154) + (Base SF 0,9% x 0,154)</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({parseFloat(form.volNacl || 0)} x 1,71) + ({parseFloat(form.volNacl09 || 0)} x 0,154) + ({form.baseSolutionType === 'SF09' ? results.calcBase.toFixed(2) : 0} x 0,154) = <strong>{((parseFloat(form.volNacl || 0) * 1.71) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} mEq</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mEq/kg/dia) = (mEq Na * Mult. Diário) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((parseFloat(form.volNacl || 0) * 1.71) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.na_day.toFixed(2)} mEq/kg/dia</strong></p>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="text-[10px] text-slate-400 mb-1">mg NaCl = (NaCl 10% x 100) + (NaCl 0,9% x 9) + (Base SF 0,9% x 9)</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({parseFloat(form.volNacl || 0)} x 100) + ({parseFloat(form.volNacl09 || 0)} x 9) + ({form.baseSolutionType === 'SF09' ? results.calcBase.toFixed(2) : 0} x 9) = <strong>{((parseFloat(form.volNacl || 0) * 100) + (parseFloat(form.volNacl09 || 0) * 9) + (form.baseSolutionType === 'SF09' ? results.calcBase * 9 : 0)).toFixed(0)} mg</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mg/kg/dia) = (mg NaCl * Mult. Diário) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((parseFloat(form.volNacl || 0) * 100) + (parseFloat(form.volNacl09 || 0) * 9) + (form.baseSolutionType === 'SF09' ? results.calcBase * 9 : 0)).toFixed(0)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.na_mg_day.toFixed(0)} mg/kg/dia</strong></p>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        )}
+
+                                                        {parseFloat(form.volCa) > 0 && (
+                                                        <div className="mb-2">
+                                                            <p className="font-bold text-slate-700 mb-1">E. Cálcio (Gliconato 10%)</p>
+                                                            {refUnit === 'mEq' ? (
+                                                                <>
+                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq Ca = Vol Ca x 0,465 mEq/mL</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100"><strong>{(form.volCa * 0.465).toFixed(2)} mEq</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão Elementar (mEq/kg/h) = (mEq Ca / Tempo) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 0.465).toFixed(2)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{(e.ca_day / 24).toFixed(2)} mEq/kg/h</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mEq/kg/dia) = (mEq Ca * Mult. Diário) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 0.465).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.ca_day.toFixed(2)} mEq/kg/dia</strong></p>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="text-[10px] text-slate-400 mb-1">mg Gliconato de Ca = Vol Ca x 97,9 mg/mL</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100"><strong>{(form.volCa * 97.9).toFixed(1)} mg</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Taxa Infusão (mg/kg/h) = (mg Gliconato / Tempo) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 97.9).toFixed(1)} / {duracaoHoras.toFixed(1)}) / {form.weight} = <strong className="text-slate-700">{e.ca_mg_rate.toFixed(1)} mg/kg/h</strong></p>
+                                                                    
+                                                                    <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mg/kg/dia) = (mg Gliconato * Mult. Diário) / Peso</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({(form.volCa * 97.9).toFixed(1)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.ca_mg_day.toFixed(0)} mg/kg/dia</strong></p>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        )}
+                                                    </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <button 
+                                        onClick={saveToHistory} 
+                                        disabled={results.tig === 0 || results.inverseError !== null} 
+                                        className={`mt-auto w-full flex items-center justify-center gap-2 p-3 text-white rounded-xl font-semibold transition-all shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed ${editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                                    >
+                                        <Save className="w-5 h-5" /> 
+                                        {editingId ? 'Atualizar Prescrição' : 'Guardar no Histórico'}
+                                    </button>
+                                </div>
+                            </main>
+                        </div>
+
+                        {/* Coluna Lateral: Histórico */}
+                        <div className={`bg-white rounded-2xl shadow-xl border border-slate-200 h-full max-h-[calc(100vh-2rem)] ${showHistory ? 'fixed inset-0 z-50 m-4 lg:m-0 lg:static lg:col-span-4 flex flex-col' : 'hidden'}`}>
+                            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+                                <div className="flex items-center gap-2">
+                                    <History className="w-5 h-5 text-emerald-600" />
+                                    <h2 className="font-bold text-slate-700">Histórico</h2>
+                                    <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">{history.length}</span>
+                                </div>
+                                <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-slate-600 p-1">✕</button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {history.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-400">
+                                        <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p className="text-sm font-medium">Nenhum cálculo guardado ainda.</p>
+                                    </div>
+                                ) : (
+                                    history.map((item) => (
+                                        <div key={item.id} className="group bg-white border border-slate-200 rounded-xl p-3 hover:border-emerald-300 hover:shadow-md transition-all relative">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800 text-sm">{item.patientName}</h4>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                                        <span>{item.timestamp.split(' ')[0]}</span>
+                                                        {item.details.daysOfLife !== null && <span className="bg-emerald-50 text-emerald-700 font-medium px-1.5 rounded">{item.details.daysOfLife} dias</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-0.5">
+                                                    <span className={`text-sm font-bold ${getStatus(item.tig).color}`}>{item.tig.toFixed(1)}</span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">TIG</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex gap-2 mt-3 pt-2 border-t border-slate-100">
+                                                <button onClick={() => handleEdit(item)} className="flex-1 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors flex items-center justify-center gap-1"><Pencil className="w-3 h-3" /> Editar</button>
+                                                <button onClick={() => deleteHistoryItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const InputField = ({ label, name, value, onChange, unit, icon, placeholder, subLabel, isGlucose, compact, required }) => (
+            <div className="relative">
+                <div className="flex justify-between items-baseline mb-1">
+                    <label htmlFor={name} className={`block font-medium text-slate-700 ${compact ? 'text-xs' : 'text-sm'}`}>{label} {required && <span className="text-red-500">*</span>}</label>
+                    {subLabel && <span className="text-[10px] text-slate-400 font-mono">{subLabel}</span>}
+                </div>
+                <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">{icon || <span className={`w-1.5 h-1.5 rounded-full ${isGlucose ? 'bg-emerald-400' : 'bg-slate-300'}`}></span>}</div>
+                    <input type="number" id={name} name={name} value={value} onChange={onChange} placeholder={placeholder || "0"} step="0.1" min="0" className={`block w-full pl-8 pr-8 ${compact ? 'py-1.5 text-sm' : 'py-2'} bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none shadow-sm group-hover:border-slate-300`} />
+                    <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none"><span className="text-slate-400 text-[10px] font-medium">{unit}</span></div>
+                </div>
+            </div>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TigCalculator />);
+    </script>
+</body>
+</html>
