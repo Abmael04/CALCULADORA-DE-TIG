@@ -206,7 +206,7 @@
                 // default mEq
                 if (item === 'Ca') return "0,465 mEq/mL";
                 if (item === 'KCl') return "1,34 mEq/mL";
-                if (item === 'NaCl') return "1,71 mEq/mL";
+                if (item === 'NaCl') return "1,7 mEq/mL";
                 if (item === 'NaCl09') return "0,154 mEq/mL";
                 if (item === 'G50') return "500 mg/mL"; 
                 if (item === 'G5') return "50 mg/mL";
@@ -299,7 +299,7 @@
                     elec.k_mg_day = (mg_KCl * dailyMult) / weight; 
 
                     // Sódio 
-                    const mEq_Na = (vNacl * 1.71) + (vNacl09 * 0.154) + (form.baseSolutionType === 'SF09' ? currentBase * 0.154 : 0);
+                    const mEq_Na = (vNacl * 1.7) + (vNacl09 * 0.154) + (form.baseSolutionType === 'SF09' ? currentBase * 0.154 : 0);
                     elec.na_day = (mEq_Na * dailyMult) / weight; 
                     const mg_NaCl = (vNacl * 100) + (vNacl09 * 9) + (form.baseSolutionType === 'SF09' ? currentBase * 9 : 0);
                     elec.na_mg_day = (mg_NaCl * dailyMult) / weight; 
@@ -405,13 +405,28 @@
             const isNaEarly = daysLife <= 2 && e.na_day > 0;
             const isKEarly = daysLife <= 2 && e.k_day > 0;
             
+            const maxNaRecommended = form.rnType === 'RNT' ? 3 : 5;
+            const maxNaLimit = form.rnType === 'RNT' ? 4 : 8;
+            const isNaHighWarning = e.na_day > maxNaRecommended && e.na_day <= maxNaLimit;
+            const isNaDanger = e.na_day > maxNaLimit;
+
             const isGlicoseHigh = form.accessType === 'periferico' && e.glicose_percent > 12.5;
-            const isKConcHigh = form.accessType === 'periferico' && e.k_mEq_L > 40;
-            const isOsmolHigh = form.accessType === 'periferico' && e.osmolarity > 900;
-            const isOsmolWarn = form.accessType === 'periferico' && e.osmolarity > 600 && e.osmolarity <= 900;
+            const isKConcWarnPerif = form.accessType === 'periferico' && e.k_mEq_L > 40 && e.k_mEq_L <= 60;
+            const isKConcHighPerif = form.accessType === 'periferico' && e.k_mEq_L > 60;
+            const isKConcHighCentral = form.accessType === 'central' && e.k_mEq_L > 80;
+            const isKConcHigh = isKConcHighPerif || isKConcHighCentral;
             
-            const hasDanger = e.k_rate > 0.5 || e.na_day > 6 || e.ca_elem_rate > 11 || e.ca_day > 4 || isGlicoseHigh || isKConcHigh || isOsmolHigh;
-            const hasWarning = (e.k_rate >= 0.4 && e.k_rate <= 0.5) || (e.k_day > 2 && e.k_day <= 4) || (e.na_day > 4 && e.na_day <= 6) || (e.ca_elem_rate >= 9 && e.ca_elem_rate <= 11) || (e.ca_day > 2 && e.ca_day <= 4) || isNaEarly || isKEarly || isOsmolWarn || (form.accessType === 'periferico' && parseFloat(form.volCa) > 0);
+            // Regra do Farol (Osmolaridade)
+            const isOsmolLow = e.osmolarity > 0 && e.osmolarity < 280;
+            const isOsmolGreen = e.osmolarity >= 280 && e.osmolarity <= 600;
+            const isOsmolYellow = e.osmolarity > 600 && e.osmolarity <= 900;
+            const isOsmolRed = e.osmolarity > 900;
+
+            const isOsmolDanger = isOsmolLow || (form.accessType === 'periferico' && isOsmolRed);
+            const isOsmolWarning = form.accessType === 'periferico' && isOsmolYellow;
+            
+            const hasDanger = e.k_rate > 0.5 || e.k_day > 6 || isNaDanger || e.ca_elem_rate > 11 || e.ca_day > 6 || isGlicoseHigh || isKConcHigh || isOsmolDanger;
+            const hasWarning = (e.k_rate >= 0.3 && e.k_rate <= 0.5) || (e.k_day > 4 && e.k_day <= 6) || isNaHighWarning || (e.ca_elem_rate >= 9 && e.ca_elem_rate <= 11) || (e.ca_day > 4 && e.ca_day <= 6) || (form.rnType !== 'RNT' && e.ca_day > 0 && e.ca_day < 2) || isNaEarly || isKEarly || isOsmolWarning || isKConcWarnPerif || (form.accessType === 'periferico' && parseFloat(form.volCa) > 0);
 
             // --- LÓGICA DO VOLUME HÍDRICO TOTAL (VHT) ---
             const daysVHT = daysOfLife || 1;
@@ -791,48 +806,58 @@
                                             </h3>
                                             
                                             {/* Físico-Química e Risco de Flebite */}
-                                            {form.accessType === 'periferico' && (
                                             <div className="mb-3 bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-inner">
-                                                <p className="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Físico-Química (Via Periférica)</p>
+                                                <p className="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Físico-Química ({form.accessType === 'periferico' ? 'Via Periférica' : 'Via Central'})</p>
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center text-[10px] text-slate-600">
-                                                        <span>Osmolaridade (Máx: 900 mOsm/L):</span>
-                                                        <span className={`font-bold ${isOsmolHigh ? 'text-red-600' : isOsmolWarn ? 'text-amber-600' : 'text-emerald-700'}`}>{e.osmolarity.toFixed(0)} mOsm/L</span>
+                                                        <span>Osmolaridade (Regra do Farol):</span>
+                                                        <span className={`font-bold ${isOsmolLow ? 'text-red-600' : isOsmolGreen ? 'text-emerald-600' : isOsmolYellow ? 'text-amber-600' : 'text-red-600'}`}>{e.osmolarity.toFixed(0)} mOsm/L</span>
                                                     </div>
                                                     <div className="flex justify-between items-center text-[10px] text-slate-600">
-                                                        <span>Concentração Glicose (Máx: 12,5%):</span>
-                                                        <span className={`font-bold ${isGlicoseHigh ? 'text-red-600' : 'text-emerald-700'}`}>{e.glicose_percent.toFixed(1)}%</span>
+                                                        <span>Concentração Glicose (Máx: 12,5% periférico):</span>
+                                                        <span className={`font-bold ${form.accessType === 'periferico' && isGlicoseHigh ? 'text-red-600' : 'text-emerald-700'}`}>{e.glicose_percent.toFixed(1)}%</span>
                                                     </div>
                                                     {e.k_day > 0 && (
                                                     <div className="flex justify-between items-center text-[10px] text-slate-600">
-                                                        <span>Conc. Potássio (Máx: 40 mEq/L):</span>
-                                                        <span className={`font-bold ${isKConcHigh ? 'text-red-600' : 'text-emerald-700'}`}>{e.k_mEq_L.toFixed(1)} mEq/L</span>
+                                                        <span>Conc. Potássio (Máx: {form.accessType === 'periferico' ? '60' : '80'} mEq/L):</span>
+                                                        <span className={`font-bold ${isKConcHigh ? 'text-red-600' : isKConcWarnPerif ? 'text-amber-600' : 'text-emerald-700'}`}>{e.k_mEq_L.toFixed(1)} mEq/L</span>
                                                     </div>
                                                     )}
                                                 </div>
-                                                {isOsmolHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Osmolaridade > 900 mOsm/L requer acesso venoso central (PICC/CVC).</p>}
-                                                {isOsmolWarn && !isOsmolHigh && <p className="text-[10px] text-amber-700 font-bold mt-2 bg-amber-100 border border-amber-200 p-1.5 rounded">Atenção: Osmolaridade > 600 mOsm/L reduz tempo de vida do acesso periférico.</p>}
-                                                {isGlicoseHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Glicose > 12,5% em acesso periférico causa flebite grave.</p>}
-                                                {isKConcHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Potássio > 40 mEq/L. Risco de flebite química e dor intensa.</p>}
+                                                
+                                                {/* Alertas - Regra do Farol Osmolaridade */}
+                                                {isOsmolLow && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: &lt; 280 mOsm/L. Proibido (Solução hipotônica. Alto risco de hemólise).</p>}
+                                                {isOsmolGreen && <p className="text-[10px] text-emerald-700 font-bold mt-2 bg-emerald-100 border border-emerald-200 p-1.5 rounded">Sinal Verde: 280 a 600 mOsm/L. Via periférica ideal e segura. Soluções de manutenção padrão.</p>}
+                                                {isOsmolYellow && <p className="text-[10px] text-amber-700 font-bold mt-2 bg-amber-100 border border-amber-200 p-1.5 rounded">Sinal Amarelo: 600 a 900 mOsm/L. Via periférica tolerada por tempo limitado. Risco moderado de flebite, exige vigilância contínua.</p>}
+                                                {isOsmolRed && form.accessType === 'periferico' && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">Sinal Vermelho: &gt; 900 mOsm/L. Acesso periférico proibido. Risco grave de lesão e necrose tecidual. Exige Acesso Central imediato.</p>}
+                                                {isOsmolRed && form.accessType === 'central' && <p className="text-[10px] text-emerald-700 font-bold mt-2 bg-emerald-100 border border-emerald-200 p-1.5 rounded">Sinal Vermelho (Periférico): &gt; 900 mOsm/L. Solução hiperosmolar, no entanto a infusão é segura pois o paciente possui Acesso Venoso Central.</p>}
+
+                                                {/* Outros alertas Físico-Químicos */}
+                                                {form.accessType === 'periferico' && isGlicoseHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Glicose &gt; 12,5% em acesso periférico causa flebite grave.</p>}
+                                                {isKConcWarnPerif && <p className="text-[10px] text-amber-700 font-bold mt-2 bg-amber-100 border border-amber-200 p-1.5 rounded">Atenção: Potássio &gt; 40 mEq/L em via periférica aumenta o risco de flebite e dor. Limite de segurança é 40-60 mEq/L.</p>}
+                                                {isKConcHighPerif && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Potássio &gt; 60 mEq/L em via periférica. Risco grave de necrose e flebite. Mude para via central!</p>}
+                                                {isKConcHighCentral && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Potássio &gt; 80 mEq/L em via central. Risco de cardiotoxicidade direta. O limite máximo seguro é 80 mEq/L.</p>}
                                             </div>
-                                            )}
 
                                             {/* Potássio */}
-                                            <div className="mb-2">
+                                            <div className="mb-2 border-t border-slate-200/60 pt-2">
                                                 <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
                                                     <span>Potássio (KCl 10%)</span>
-                                                    <span className={e.k_rate > 0.5 ? 'text-red-600' : e.k_rate >= 0.4 ? 'text-amber-600' : 'text-emerald-600'}>
+                                                    <span className={e.k_rate > 0.5 ? 'text-red-600' : e.k_rate >= 0.3 ? 'text-amber-600' : 'text-emerald-600'}>
                                                         Infusão: {refUnit === 'mEq' ? `${e.k_rate.toFixed(2)} mEq/kg/h` : `${e.k_mg_rate.toFixed(1)} mg/kg/h (KCl)`}
                                                     </span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                                                    <span>Recomendado: {refUnit === 'mEq' ? '1 a 2 mEq/kg/dia' : '75 a 150 mg/kg/dia (KCl)'}</span>
-                                                    <span className={`font-semibold ${e.k_day > 2 ? 'text-amber-600' : e.k_day > 4 ? 'text-red-600' : 'text-slate-600'}`}>
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-[10px] text-slate-500 gap-1 sm:gap-0">
+                                                    <span>Recomendado: {refUnit === 'mEq' ? '2 a 3 mEq/kg/dia (até 4 em RNPT)' : '150 a 225 mg/kg/dia (até 300)'}</span>
+                                                    <span className={`font-semibold ${e.k_day > 6 ? 'text-red-600' : e.k_day > 4 ? 'text-amber-600' : 'text-slate-600'}`}>
                                                         A receber: {refUnit === 'mEq' ? `${e.k_day.toFixed(1)} mEq/kg/dia` : `${e.k_mg_day.toFixed(0)} mg/kg/dia (KCl)`}
                                                     </span>
                                                 </div>
-                                                {isKEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Aviso: K+ não recomendado antes das 48-72h e diurese bem estabelecida.</p>}
-                                                {e.k_rate > 0.5 && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100/80 p-1 rounded">ALERTA: Infusão > 0.5 mEq/kg/h. Risco de paragem cardíaca!</p>}
+                                                {e.k_day > 0 && <p className="text-[10px] text-slate-600 font-bold mt-1 bg-slate-100 border border-slate-200 p-1.5 rounded">Critério de Início: Confirme sempre se há diurese estabelecida (&gt; 1 mL/kg/h) antes de introduzir K+.</p>}
+                                                {isKEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1.5 rounded">Aviso: K+ não é recomendado nas primeiras 24-48h de vida devido à fase oligúrica fisiológica.</p>}
+                                                {e.k_day > 4 && e.k_day <= 6 && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1.5 rounded">Atenção: Oferta &gt; 4 mEq/kg/dia. Valores elevados justificam-se apenas em perdas renais intensas (uso de diuréticos) ou correção de hipocalemia grave. Checar Magnésio se refratário.</p>}
+                                                {(e.k_rate >= 0.3 && e.k_rate <= 0.5) && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1.5 rounded">Atenção: Infusão de ataque/correção rápida. É obrigatória monitorização cardiovascular por ECG durante a infusão.</p>}
+                                                {e.k_rate > 0.5 && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO ABSOLUTO: Velocidade &gt; 0,5 mEq/kg/h. Risco iminente de parada cardíaca irreversível! NUNCA administre em injeção direta (bolus).</p>}
                                             </div>
 
                                             {/* Sódio */}
@@ -840,13 +865,16 @@
                                                 <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
                                                     <span>Sódio (Total NaCl)</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                                                    <span>Recomendado: {refUnit === 'mEq' ? '2 a 4 mEq/kg/dia' : '117 a 234 mg/kg/dia (NaCl)'}</span>
-                                                    <span className={`font-semibold ${e.na_day > 4 ? 'text-amber-600' : e.na_day > 6 ? 'text-red-600' : 'text-slate-600'}`}>
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-[10px] text-slate-500 gap-1 sm:gap-0">
+                                                    <span>Recomendado: {refUnit === 'mEq' ? (form.rnType === 'RNT' ? '2 a 3 mEq/kg/dia' : '3 a 5 mEq/kg/dia (até 8 em extremos)') : (form.rnType === 'RNT' ? '117 a 176 mg/kg/dia' : '176 a 294 mg/kg/dia')}</span>
+                                                    <span className={`font-semibold ${isNaDanger ? 'text-red-600' : isNaHighWarning ? 'text-amber-600' : 'text-slate-600'}`}>
                                                         A receber: {refUnit === 'mEq' ? `${e.na_day.toFixed(1)} mEq/kg/dia` : `${e.na_mg_day.toFixed(0)} mg/kg/dia (NaCl)`}
                                                     </span>
                                                 </div>
-                                                {isNaEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Aviso: Na+ não recomendado no 1º/2º dia, aguardar perda de peso fisiológica e diurese.</p>}
+                                                {e.na_day > 0 && <p className="text-[10px] text-slate-600 font-bold mt-1 bg-slate-100 border border-slate-200 p-1.5 rounded">Proibição Absoluta: A ampola de NaCl 10% jamais deve ser administrada pura (bolus/push). Diluição obrigatória!</p>}
+                                                {isNaEarly && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1.5 rounded">Aviso: Na+ não recomendado no 1º/2º dia de vida. Aguarde a contração do espaço extracelular e perda de peso fisiológica.</p>}
+                                                {isNaHighWarning && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1.5 rounded">Atenção: Oferta de sódio elevada. Risco de Acidose Hiperclorêmica. Considere Acetato de Sódio se hipercloremia presente.</p>}
+                                                {isNaDanger && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Sódio excessivo! Correção rápida ou sobrecarga osmolar aumenta drasticamente o risco de Hemorragia Peri-Intraventricular (HPIV) e Mielinólise Pontina.</p>}
                                             </div>
 
                                             {/* Cálcio */}
@@ -857,35 +885,17 @@
                                                         Infusão: {e.ca_elem_rate.toFixed(1)} mg/kg/h (Elementar)
                                                     </span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                                                    <span>Recomendado: {refUnit === 'mEq' ? '1 a 2 mEq/kg/dia' : '20 a 40 mg/kg/dia (Elem.)'}</span>
-                                                    <span className={`font-semibold ${e.ca_day > 2 ? 'text-amber-600' : e.ca_day > 4 ? 'text-red-600' : 'text-slate-600'}`}>
-                                                        A receber: {refUnit === 'mEq' ? `${e.ca_day.toFixed(1)} mEq/kg/dia` : `${e.ca_mg_day.toFixed(1)} mg/kg/dia (Elem.)`}
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-[10px] text-slate-500 gap-1 sm:gap-0">
+                                                    <span>Recomendado (Manutenção): {refUnit === 'mEq' ? (form.rnType === 'RNT' ? '0,5 a 4 mEq/kg/dia' : '2 a 4 mEq/kg/dia') : (form.rnType === 'RNT' ? '100 a 800 mg/kg/dia (Gliconato)' : '400 a 800 mg/kg/dia (Gliconato)')}</span>
+                                                    <span className={`font-semibold ${e.ca_day > 6 ? 'text-red-600' : e.ca_day > 4 ? 'text-amber-600' : (form.rnType !== 'RNT' && e.ca_day > 0 && e.ca_day < 2) ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                        A receber: {refUnit === 'mEq' ? `${e.ca_day.toFixed(1)} mEq/kg/dia` : `${e.ca_mg_day.toFixed(0)} mg/kg/dia (Gliconato)`}
                                                     </span>
                                                 </div>
+                                                {form.rnType !== 'RNT' && e.ca_day > 0 && e.ca_day < 2 && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Aviso: Para recém-nascidos prematuros, a manutenção basal recomendada é de pelo menos 2 mEq/kg/dia.</p>}
+                                                {e.ca_day > 4 && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100/80 p-1 rounded">Atenção: Oferta &gt; 4 mEq/kg/dia. Valores elevados (abordagem agressiva) são justificáveis para correção de hipocalcemia sintomática (tremores, convulsões, etc).</p>}
                                                 {e.ca_elem_rate > 11 && <p className="text-[10px] text-red-700 font-bold mt-1 bg-red-100/80 p-1 rounded">ALERTA: Infusão de cálcio elementar excedeu o limite de segurança!</p>}
                                                 {form.accessType === 'periferico' && parseFloat(form.volCa) > 0 && <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-100 border border-amber-200 p-1.5 rounded">Atenção (Periférico): O extravasamento de cálcio causa necrose tecidual severa. Nunca misture com Bicarbonato ou Fosfato.</p>}
                                             </div>
-                                        </div>
-                                    )}
-
-                                    {/* --- MENSAGEM PÓS-CÁLCULO E APOIO --- */}
-                                    {results.totalVolume > 0 && form.weight > 0 && !results.inverseError && (
-                                        <div className="mt-2 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 p-6 rounded-xl shadow-sm text-center relative overflow-hidden">
-                                            <Heart className="w-16 h-16 absolute -right-3 -top-3 text-emerald-100/60 fill-emerald-100/60" />
-                                            <h3 className="text-emerald-800 font-bold text-[15px] mb-2 flex items-center justify-center gap-2">
-                                                <Heart className="w-5 h-5 text-rose-500 fill-rose-500 animate-pulse" /> 
-                                                A ferramenta ajudou-o hoje?
-                                            </h3>
-                                            <p className="text-xs text-emerald-700 mb-4 max-w-sm mx-auto font-medium leading-relaxed">
-                                                Considere contribuir com o projeto! O seu apoio mantém esta calculadora 100% gratuita, sem anúncios e sempre atualizada.
-                                            </p>
-                                            <button 
-                                                onClick={() => setIsPixModalOpen(true)} 
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-all hover:scale-105 active:scale-95 text-sm flex items-center gap-2 mx-auto"
-                                            >
-                                                <Heart className="w-4 h-4 fill-current" /> Quero Contribuir
-                                            </button>
                                         </div>
                                     )}
 
@@ -1013,11 +1023,11 @@
                                                             <p className="font-bold text-slate-700 mb-1">D. Sódio Total</p>
                                                             {refUnit === 'mEq' ? (
                                                                 <>
-                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq Na = (NaCl 10% x 1,71) + (NaCl 0,9% x 0,154) + (Base SF 0,9% x 0,154)</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({parseFloat(form.volNacl || 0)} x 1,71) + ({parseFloat(form.volNacl09 || 0)} x 0,154) + ({form.baseSolutionType === 'SF09' ? results.calcBase.toFixed(2) : 0} x 0,154) = <strong>{((parseFloat(form.volNacl || 0) * 1.71) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} mEq</strong></p>
+                                                                    <p className="text-[10px] text-slate-400 mb-1">mEq Na = (NaCl 10% x 1,7) + (NaCl 0,9% x 0,154) + (Base SF 0,9% x 0,154)</p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({parseFloat(form.volNacl || 0)} x 1,7) + ({parseFloat(form.volNacl09 || 0)} x 0,154) + ({form.baseSolutionType === 'SF09' ? results.calcBase.toFixed(2) : 0} x 0,154) = <strong>{((parseFloat(form.volNacl || 0) * 1.7) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} mEq</strong></p>
                                                                     
                                                                     <p className="text-[10px] text-slate-400 mt-1 mb-1">Oferta (mEq/kg/dia) = (mEq Na * Mult. Diário) / Peso</p>
-                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((parseFloat(form.volNacl || 0) * 1.71) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.na_day.toFixed(2)} mEq/kg/dia</strong></p>
+                                                                    <p className="bg-slate-50 p-2 rounded border border-slate-100">= ({((parseFloat(form.volNacl || 0) * 1.7) + (parseFloat(form.volNacl09 || 0) * 0.154) + (form.baseSolutionType === 'SF09' ? results.calcBase * 0.154 : 0)).toFixed(2)} * {multiplicadorDiario.toFixed(2)}) / {form.weight} = <strong className="text-slate-700">{e.na_day.toFixed(2)} mEq/kg/dia</strong></p>
                                                                 </>
                                                             ) : (
                                                                 <>
