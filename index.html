@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora TIG Neonatal</title>
+    <title>Calculadora TIG Neonatal Avançada</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,10 +27,110 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+
+        /* Oculta a área de impressão na tela normal */
+        #area-impressao {
+            display: none;
+        }
+
+        /* --- MOTOR DE IMPRESSÃO PURO (CSS Vanilla) --- */
+        @media print {
+            @page { margin: 0.5cm; size: A4 portrait; }
+            
+            /* Garante fundos e cores precisas na impressora */
+            html, body { 
+                background-color: white !important; 
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            /* OCULTA O REACT TOTALMENTE NA IMPRESSÃO */
+            #root, .no-print { display: none !important; }
+            
+            /* MOSTRA APENAS A ÁREA DE IMPRESSÃO */
+            #area-impressao { 
+                display: block !important; 
+                width: 100% !important;
+            }
+
+            /* Estilo da Ficha - Retângulo tracejado */
+            .ficha-recorte {
+                border: 2px dashed #333 !important;
+                padding: 15px !important;
+                margin-bottom: 15px !important; /* Espaçamento entre fichas */
+                border-radius: 8px !important;
+                box-sizing: border-box !important;
+                font-family: sans-serif !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                width: 100% !important;
+            }
+
+            /* Limite estrito: Força quebra de página a cada 4 fichas (caso imprima várias) */
+            .ficha-recorte:nth-child(4n) {
+                page-break-after: always !important;
+                break-after: page !important;
+                margin-bottom: 0 !important;
+            }
+
+            /* Header da Ficha */
+            .ficha-header {
+                display: flex !important;
+                justify-content: space-between !important;
+                border-bottom: 2px solid #000 !important;
+                padding-bottom: 8px !important;
+                margin-bottom: 12px !important;
+            }
+            
+            /* Linha de Material */
+            .ficha-item {
+                display: flex !important;
+                justify-content: flex-start !important;
+                border-bottom: 1px dotted #ccc !important;
+                padding: 6px 0 !important;
+                font-size: 13px !important;
+                color: #000 !important;
+            }
+            .ficha-item:last-child { border-bottom: none !important; }
+
+            /* Alertas Clínicos Críticos com Alto Contraste */
+            .alerta-critico {
+                background-color: #fee2e2 !important; /* Vermelho claro */
+                border: 2px solid #b91c1c !important; /* Vermelho escuro */
+                color: #7f1d1d !important;
+                font-weight: 900 !important;
+                padding: 10px !important;
+                border-radius: 6px !important;
+                margin-top: 12px !important;
+                font-size: 12px !important;
+                text-transform: uppercase !important;
+                /* Truque extra para garantir que o fundo imprima independentemente das configs de browser */
+                box-shadow: inset 0 0 0 1000px #fee2e2 !important; 
+            }
+
+            .alerta-aviso {
+                background-color: #fef3c7 !important; /* Amarelo/Laranja claro */
+                border: 2px solid #d97706 !important;
+                color: #92400e !important;
+                font-weight: 900 !important;
+                padding: 10px !important;
+                border-radius: 6px !important;
+                margin-top: 12px !important;
+                font-size: 12px !important;
+                text-transform: uppercase !important;
+                box-shadow: inset 0 0 0 1000px #fef3c7 !important;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased">
     
+    <!-- ÁREA DE IMPRESSÃO OCULTA PARA O JAVASCRIPT PURO -->
+    <div id="area-impressao"></div>
+
     <!-- APLICAÇÃO REACT -->
     <div id="root"></div>
 
@@ -41,6 +141,8 @@
         const IconBase = ({ children, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className || "w-6 h-6"}>{children}</svg>;
         const Calculator = (props) => <IconBase {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></IconBase>;
         const Hospital = (props) => <IconBase {...props}><path d="M12 6v4"/><path d="M14 8h-4"/><path d="M5 22v-2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><path d="M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"/><path d="M10 22v-4h4v4"/></IconBase>;
+        const CareHeart = (props) => <IconBase {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5 9.5 8.5h3L11 12"/></IconBase>;
+        const Heart = (props) => <IconBase {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></IconBase>;
         const Syringe = (props) => <IconBase {...props}><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></IconBase>;
         const Scale = (props) => <IconBase {...props}><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></IconBase>;
         const Activity = (props) => <IconBase {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase>;
@@ -48,6 +150,14 @@
         const AlertTriangle = (props) => <IconBase {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></IconBase>;
         const CheckCircle = (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
         const Beaker = (props) => <IconBase {...props}><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></IconBase>;
+        const Save = (props) => <IconBase {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></IconBase>;
+        const History = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></IconBase>;
+        const User = (props) => <IconBase {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconBase>;
+        const Trash2 = (props) => <IconBase {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></IconBase>;
+        const FileText = (props) => <IconBase {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconBase>;
+        const Printer = (props) => <IconBase {...props}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></IconBase>;
+        const Pencil = (props) => <IconBase {...props}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></IconBase>;
+        const X = (props) => <IconBase {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
         const Target = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconBase>;
         const ChevronDown = (props) => <IconBase {...props}><polyline points="6 9 12 15 18 9"/></IconBase>;
         const ChevronUp = (props) => <IconBase {...props}><polyline points="18 15 12 9 6 15"/></IconBase>;
@@ -56,10 +166,12 @@
         const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></IconBase>;
         const Calendar = (props) => <IconBase {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconBase>;
         const ActivityLine = (props) => <IconBase {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
-        const Heart = (props) => <IconBase {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></IconBase>;
-        const Copy = (props) => <IconBase {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconBase>;
-        const X = (props) => <IconBase {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
+        const CheckSquare = (props) => <IconBase {...props}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></IconBase>;
+        const Hash = (props) => <IconBase {...props}><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></IconBase>;
         const Mail = (props) => <IconBase {...props}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></IconBase>;
+        const Briefcase = (props) => <IconBase {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></IconBase>;
+        const Award = (props) => <IconBase {...props}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></IconBase>;
+        const Copy = (props) => <IconBase {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconBase>;
 
         // --- DADOS DO PIX ---
         const pixKeys = {
@@ -130,9 +242,11 @@
         function TigCalculator() {
             // --- Estados ---
             const initialFormState = {
-                ageInputMode: 'days', // Preferência inicial por dias, evita coletar datas exatas desnecessariamente
+                patientName: '',
+                ageInputMode: 'dob',
                 birthDate: '',
                 daysOfLifeInput: '',
+                prescriptionNumber: '', 
                 weight: '',
                 rate: '',
                 volG5: '', 
@@ -142,7 +256,7 @@
                 volNacl: '',
                 volNacl09: '',
                 baseSolutionType: 'G5',
-                calcMode: 'forward',
+                calcMode: 'inverse', 
                 targetTig: '',
                 targetVolume: '100',
                 rnType: 'RNT',
@@ -162,10 +276,18 @@
                     k_mg_rate: 0, k_mg_day: 0, na_mg_day: 0, ca_mg_day: 0, ca_mg_rate: 0
                 } 
             });
-
+            const [history, setHistory] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('tig_history');
+                    return saved ? JSON.parse(saved) : [];
+                } catch (e) { return []; }
+            });
+            const [showHistory, setShowHistory] = useState(false);
+            const [editingId, setEditingId] = useState(null);
             const [showMath, setShowMath] = useState(false); 
-            const [showVHT, setShowVHT] = useState(false); 
+            const [showVHT, setShowVHT] = useState(true); 
             const [refUnit, setRefUnit] = useState('mEq');
+            const [selectedIds, setSelectedIds] = useState([]);
 
             // --- Estados do Modal de Doação ---
             const [isPixModalOpen, setIsPixModalOpen] = useState(false);
@@ -213,6 +335,9 @@
                 if (item === 'SF09') return "0,154 mEq/mL";
                 if (item === 'ABD') return "Diluente";
             };
+
+            // --- Efeitos ---
+            useEffect(() => { localStorage.setItem('tig_history', JSON.stringify(history)); }, [history]);
 
             // LÓGICA PRINCIPAL MATEMÁTICA E SEGURANÇA ELETROLÍTICA
             useEffect(() => {
@@ -348,7 +473,7 @@
                     setForm(prev => ({ ...prev, [name]: value }));
                 } else if (type === 'date') {
                     setForm(prev => ({ ...prev, [name]: value }));
-                } else if (name === 'rnType') {
+                } else if (name === 'patientName' || name === 'prescriptionNumber' || name === 'rnType') {
                     setForm(prev => ({ ...prev, [name]: value }));
                 } else if (value === '' || /^\d*\.?\d*$/.test(value)) {
                     setForm(prev => ({ ...prev, [name]: value }));
@@ -362,6 +487,13 @@
 
             const handleReset = () => {
                 setForm(initialFormState);
+                setEditingId(null);
+                setShowMath(false);
+            };
+
+            const cancelEdit = () => {
+                setForm(initialFormState);
+                setEditingId(null);
                 setShowMath(false);
             };
 
@@ -383,6 +515,209 @@
                 }
                 document.body.removeChild(textArea);
             };
+
+            const saveToHistory = () => {
+                if (results.tig === 0 || results.inverseError) return;
+
+                const finalDetails = { ...form, ...results };
+                if (form.calcMode === 'inverse') {
+                    finalDetails.volG5 = results.calcBase > 0 ? results.calcBase.toFixed(2) : 0;
+                    finalDetails.volG50 = results.calcG50 > 0 ? results.calcG50.toFixed(2) : 0;
+                } else {
+                    finalDetails.volG5 = parseFloat(form.volG5) || 0;
+                    finalDetails.volG50 = parseFloat(form.volG50) || 0;
+                }
+                
+                finalDetails.daysOfLife = daysOfLife;
+
+                const newItem = {
+                    id: editingId || Date.now(),
+                    timestamp: editingId ? history.find(h => h.id === editingId).timestamp : new Date().toLocaleString('pt-PT'),
+                    patientName: form.patientName || 'Paciente Sem Nome',
+                    tig: results.tig,
+                    details: finalDetails,
+                    materials: calculateMaterials(finalDetails)
+                };
+
+                if (editingId) {
+                    setHistory(prev => prev.map(item => item.id === editingId ? newItem : item));
+                    setEditingId(null);
+                    setForm(initialFormState);
+                    alert("Prescrição atualizada com sucesso!");
+                } else {
+                    setHistory(prev => [newItem, ...prev]);
+                }
+                setShowMath(false);
+            };
+
+            const deleteHistoryItem = (id) => {
+                if(confirm('Tem a certeza que deseja excluir este registo?')) setHistory(prev => prev.filter(item => item.id !== id));
+            };
+
+            const handleEdit = (entry) => {
+                setForm({
+                    patientName: entry.details.patientName || '',
+                    ageInputMode: entry.details.ageInputMode || 'dob',
+                    birthDate: entry.details.birthDate || '',
+                    daysOfLifeInput: entry.details.daysOfLifeInput || '',
+                    prescriptionNumber: entry.details.prescriptionNumber || '',
+                    weight: entry.details.weight,
+                    rate: entry.details.rate,
+                    volG5: entry.details.volG5,
+                    volG50: entry.details.volG50,
+                    volCa: entry.details.volCa,
+                    volKcl: entry.details.volKcl,
+                    volNacl: entry.details.volNacl,
+                    volNacl09: entry.details.volNacl09 || '',
+                    baseSolutionType: entry.details.baseSolutionType || 'G5',
+                    calcMode: entry.details.calcMode || 'forward', 
+                    targetTig: entry.details.targetTig || '',
+                    targetVolume: entry.details.totalVolume || '100',
+                    rnType: entry.details.rnType || 'RNT',
+                    photoTherapy: entry.details.photoTherapy || false,
+                    radiantWarmer: entry.details.radiantWarmer || false,
+                    humidifiedIncubator: entry.details.humidifiedIncubator || false,
+                    accessType: entry.details.accessType || 'periferico'
+                });
+                setEditingId(entry.id);
+                setShowHistory(false);
+                setShowMath(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            // --- LÓGICA DE GERAÇÃO DA IMPRESSÃO (JAVASCRIPT PURO) ---
+            const gerarHtmlFicha = (paciente, prescricao, materiais, e, accessType, timestamp) => {
+                let alertaHtml = '';
+                if (accessType === 'periferico') {
+                    if (e.osmolarity > 900) {
+                        alertaHtml += `<div class="alerta-critico">PERIGO: Osmolaridade ${e.osmolarity.toFixed(0)} mOsm/L (>900). Risco de Flebite! Requer Acesso Central.</div>`;
+                    } else if (e.osmolarity > 600) {
+                        alertaHtml += `<div class="alerta-aviso">ATENÇÃO: Osmolaridade ${e.osmolarity.toFixed(0)} mOsm/L (>600). Monitorizar acesso periférico.</div>`;
+                    }
+                    if (e.glicose_percent > 12.5) {
+                        alertaHtml += `<div class="alerta-critico">PERIGO: Glicose ${e.glicose_percent.toFixed(1)}% em via periférica.</div>`;
+                    }
+                    if (e.k_mEq_L > 40) {
+                        alertaHtml += `<div class="alerta-critico">PERIGO: Potássio ${e.k_mEq_L.toFixed(1)} mEq/L. Risco de dor/flebite.</div>`;
+                    }
+                }
+
+                const listaMateriais = materiais.map(mat => `
+                    <div class="ficha-item">
+                        <div style="font-weight: 900; width: 40px; text-align: left;">${mat.qtd} x</div>
+                        <div style="flex: 1; padding-left: 5px;">${mat.name}</div>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="ficha-recorte">
+                        <div class="ficha-header">
+                            <div>
+                                <div style="font-size: 10px; text-transform: uppercase; font-weight: bold; color: #555;">Paciente</div>
+                                <div style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 2px 0;">${paciente || 'NÃO IDENTIFICADO'}</div>
+                                <div style="font-size: 12px; font-weight: normal; color: #333;">
+                                    Prescrição Nº: <strong style="font-weight: 900;">${prescricao || '---'}</strong>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 10px; text-transform: uppercase; font-weight: bold; color: #555;">Registo</div>
+                                <div style="font-size: 12px; font-weight: bold; color: #333;">${timestamp}</div>
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #065f46; margin-bottom: 8px;">
+                            Materiais a Separar:
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            ${listaMateriais}
+                        </div>
+                        ${alertaHtml}
+                    </div>
+                `;
+            };
+
+            const handleImprimirFichaAtual = () => {
+                const pacienteStr = form.patientName;
+                const prescricaoStr = form.prescriptionNumber;
+                const timestamp = new Date().toLocaleString('pt-PT');
+                const materiaisCalc = calculateMaterials({
+                    ...form, 
+                    volG5: form.calcMode === 'inverse' ? results.calcBase : form.volG5, 
+                    volG50: form.calcMode === 'inverse' ? results.calcG50 : form.volG50
+                });
+                
+                const htmlFicha = gerarHtmlFicha(pacienteStr, prescricaoStr, materiaisCalc, results.elec, form.accessType, timestamp);
+                
+                const divImpressao = document.getElementById('area-impressao');
+                divImpressao.innerHTML = `<div class="print-grid-container">${htmlFicha}</div>`;
+                
+                setTimeout(() => window.print(), 150);
+            };
+
+            const handleImprimirLote = () => {
+                const itensParaImprimir = selectedIds.length > 0 
+                    ? reportItems.filter(item => selectedIds.includes(item.id)) 
+                    : reportItems;
+
+                let htmlLote = '';
+                itensParaImprimir.forEach(item => {
+                    const e = item.details.elec || { osmolarity: 0, glicose_percent: 0, k_mEq_L: 0 };
+                    htmlLote += gerarHtmlFicha(item.patientName, item.details.prescriptionNumber, item.materials, e, item.details.accessType, item.timestamp);
+                });
+
+                const divImpressao = document.getElementById('area-impressao');
+                divImpressao.innerHTML = `<div class="print-grid-container">${htmlLote}</div>`;
+                
+                setTimeout(() => window.print(), 150);
+            };
+
+
+            // Controle de quantidades e nomes no histórico
+            const handleMaterialQtyChange = (historyId, matIndex, newQty) => {
+                setHistory(prev => prev.map(item => {
+                    if (item.id === historyId) {
+                        const updatedMaterials = [...item.materials];
+                        updatedMaterials[matIndex] = { ...updatedMaterials[matIndex], qtd: parseInt(newQty) || 0 };
+                        return { ...item, materials: updatedMaterials };
+                    }
+                    return item;
+                }));
+            };
+
+            const handleMaterialNameChange = (historyId, matIndex, newName) => {
+                setHistory(prev => prev.map(item => {
+                    if (item.id === historyId) {
+                        const updatedMaterials = [...item.materials];
+                        updatedMaterials[matIndex] = { ...updatedMaterials[matIndex], name: newName };
+                        return { ...item, materials: updatedMaterials };
+                    }
+                    return item;
+                }));
+            };
+
+            const removeMaterial = (historyId, matIndex) => {
+                setHistory(prev => prev.map(item => {
+                    if (item.id === historyId) {
+                        const updatedMaterials = item.materials.filter((_, idx) => idx !== matIndex);
+                        return { ...item, materials: updatedMaterials };
+                    }
+                    return item;
+                }));
+            };
+
+            const addMaterial = (historyId) => {
+                setHistory(prev => prev.map(item => {
+                    if (item.id === historyId) {
+                        const updatedMaterials = [...item.materials, { qtd: 1, name: "Novo Material" }];
+                        return { ...item, materials: updatedMaterials };
+                    }
+                    return item;
+                }));
+            };
+
+            const toggleSelection = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+            const reportItems = history.filter(item => item.details.calcMode === 'forward');
+            const selectAll = () => setSelectedIds(reportItems.map(item => item.id));
+            const deselectAll = () => setSelectedIds([]);
 
             const getStatus = (tig) => {
                 if (tig === 0) return { color: 'text-gray-400', bg: 'bg-gray-100', icon: null, text: '---' };
@@ -461,51 +796,78 @@
             const baseOsmMath = form.baseSolutionType === 'G5' ? 0.252 : (form.baseSolutionType === 'SF09' ? 0.308 : 0);
 
             return (
-                <div className="min-h-screen font-sans text-slate-800 p-4 md:p-8 flex justify-center items-start">
-                    <div className="w-full max-w-4xl mx-auto">
+                <div className="min-h-screen font-sans text-slate-800 p-4 md:p-8 flex justify-center items-start no-print">
+                    <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
                         
-                        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-emerald-100 flex flex-col transition-all duration-300">
+                        {/* Coluna Principal */}
+                        <div className={`bg-white rounded-2xl shadow-xl overflow-hidden border flex flex-col transition-all duration-300 ${showHistory ? 'lg:col-span-8' : 'lg:col-span-12 max-w-4xl mx-auto w-full'} ${editingId ? 'border-orange-300 ring-2 ring-orange-100' : 'border-emerald-100'}`}>
                             
-                            <header className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors duration-300 bg-gradient-to-r from-emerald-800 to-teal-600 text-white">
+                            <header className={`p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors duration-300 ${editingId ? 'bg-orange-500 text-white' : 'bg-gradient-to-r from-emerald-800 to-teal-600 text-white'}`}>
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-white/20 rounded-lg shadow-sm"><Hospital className="w-7 h-7 text-white" /></div>
                                     <div>
-                                        <h1 className="text-2xl font-bold tracking-tight">Calculadora de TIG Neonatal</h1>
-                                        <p className="text-xs mt-0.5 font-medium text-emerald-100 flex items-center flex-wrap gap-2">
-                                            <span>Desenvolvido por <a href="https://www.linkedin.com/in/abmael-andrade-11108a182/" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-white underline decoration-emerald-400/50 hover:decoration-white transition-all">Abmael Andrade</a></span>
-                                            <button 
-                                                onClick={() => setIsPixModalOpen(true)} 
-                                                className="flex items-center gap-1 bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-sm"
-                                            >
-                                                <Heart className="w-3 h-3 fill-current animate-pulse" /> Apoie
-                                            </button>
+                                        <h1 className="text-2xl font-bold tracking-tight">{editingId ? 'A Editar Prescrição' : 'Calculadora de TIG Neonatal'}</h1>
+                                        <p className={`text-xs mt-0.5 font-medium ${editingId ? 'text-orange-100' : 'text-emerald-100'} flex items-center flex-wrap gap-2`}>
+                                            {editingId ? 'Atualize os valores abaixo' : (
+                                                <>
+                                                    <span>Desenvolvido por <a href="https://www.linkedin.com/in/abmael-andrade-11108a182/" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-white underline decoration-emerald-400/50 hover:decoration-white transition-all">Abmael Andrade</a></span>
+                                                    <a 
+                                                        href="https://linktr.ee/abmael.andrade24" 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1 bg-teal-500 hover:bg-teal-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-sm"
+                                                    >
+                                                        <Briefcase className="w-3 h-3 fill-current" /> Contrate-me
+                                                    </a>
+                                                    <button 
+                                                        onClick={() => setIsPixModalOpen(true)} 
+                                                        className="flex items-center gap-1 bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all shadow-sm"
+                                                    >
+                                                        <Heart className="w-3 h-3 fill-current animate-pulse" /> Apoie
+                                                    </button>
+                                                </>
+                                            )}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => setIsErrorModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-md text-sm transition-colors text-white shadow-sm" title="Reportar Erro ou Sugestão">
-                                        <Mail className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Reportar Erro</span>
-                                    </button>
-                                    <button onClick={handleReset} className="flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-md text-sm transition-colors text-white/90 shadow-sm"><RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Limpar Dados</span></button>
+                                    {editingId && <button onClick={cancelEdit} className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-md text-sm transition-colors text-white"><X className="w-4 h-4" /> Cancelar</button>}
+                                    
+                                    {!editingId && (
+                                        <>
+                                            <button onClick={() => setIsErrorModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-md text-sm transition-colors text-white shadow-sm" title="Reportar Erro ou Sugestão">
+                                                <Mail className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Reportar Erro</span>
+                                            </button>
+                                            <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-md text-sm transition-colors text-white/90 shadow-sm"><History className="w-4 h-4" /><span className="hidden sm:inline">Histórico</span><span className="bg-white/20 px-1.5 rounded text-xs font-bold">{history.length}</span></button>
+                                        </>
+                                    )}
+
+                                    <button onClick={handleReset} className="flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-md text-sm transition-colors text-white/90 shadow-sm"><RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Limpar</span></button>
                                 </div>
                             </header>
 
                             <main className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 relative">
                                 <div className="space-y-6">
                                     
-                                    {/* Abas de Modo de Cálculo */}
-                                    <div className="flex bg-slate-100 p-1 rounded-lg">
-                                        <button onClick={() => handleModeToggle('forward')} className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${form.calcMode === 'forward' ? 'bg-white shadow-sm text-emerald-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                                            Modo Validador <span className="block text-[10px] font-normal text-slate-400">Verificar bolsa já prescrita</span>
-                                        </button>
-                                        <button onClick={() => handleModeToggle('inverse')} className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${form.calcMode === 'inverse' ? 'bg-white shadow-sm text-teal-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                                    {/* Abas de Modo de Cálculo - INVERTIDAS: Prescritor primeiro */}
+                                    <div className="flex bg-slate-100 p-1 rounded-lg shadow-inner">
+                                        <button onClick={() => handleModeToggle('inverse')} className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${form.calcMode === 'inverse' ? 'bg-white shadow-sm text-teal-700 ring-1 ring-teal-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}>
                                             Modo Prescritor <span className="block text-[10px] font-normal text-slate-400">Prescrever pela TIG Alvo</span>
+                                        </button>
+                                        <button onClick={() => handleModeToggle('forward')} className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${form.calcMode === 'forward' ? 'bg-white shadow-sm text-emerald-700 ring-1 ring-emerald-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}>
+                                            Modo Validador <span className="block text-[10px] font-normal text-slate-400">Verificar prescrição</span>
                                         </button>
                                     </div>
 
-                                    {/* Informações do Paciente - Somente Idade para LGPD */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Informações do Paciente */}
+                                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${form.calcMode === 'forward' ? 'md:grid-cols-3' : ''} gap-4`}>
+                                        <div className={`flex flex-col justify-end ${form.calcMode === 'forward' ? 'sm:col-span-2 md:col-span-1' : 'sm:col-span-1'}`}>
+                                            <div className="flex justify-between items-end mb-2 h-7">
+                                                <label className="text-sm font-medium text-slate-700 flex items-center gap-1"><User className="w-4 h-4 text-emerald-500" /> Paciente</label>
+                                            </div>
+                                            <input type="text" name="patientName" value={form.patientName} onChange={handleChange} placeholder="Nome do Paciente" className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-colors" />
+                                        </div>
                                         <div className="flex flex-col justify-end sm:col-span-1">
                                             <div className="flex justify-between items-end mb-2 h-7">
                                                 <div className="flex items-center gap-2 pb-0.5">
@@ -515,8 +877,8 @@
                                                     )}
                                                 </div>
                                                 <div className="flex bg-slate-100 p-0.5 rounded text-[10px] font-medium">
-                                                    <button type="button" onClick={() => setForm(prev => ({...prev, ageInputMode: 'days'}))} className={`px-2 py-1 rounded transition-colors ${form.ageInputMode === 'days' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:bg-slate-200'}`}>Dias</button>
                                                     <button type="button" onClick={() => setForm(prev => ({...prev, ageInputMode: 'dob'}))} className={`px-2 py-1 rounded transition-colors ${form.ageInputMode === 'dob' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:bg-slate-200'}`}>Data Nasc.</button>
+                                                    <button type="button" onClick={() => setForm(prev => ({...prev, ageInputMode: 'days'}))} className={`px-2 py-1 rounded transition-colors ${form.ageInputMode === 'days' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:bg-slate-200'}`}>Dias Vida</button>
                                                 </div>
                                             </div>
                                             {form.ageInputMode === 'days' ? (
@@ -530,23 +892,30 @@
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex items-center text-xs text-slate-400 p-2 italic sm:col-span-1">
-                                            * Os dados inseridos não são guardados, respeitando a privacidade (LGPD/RGPD).
-                                        </div>
+                                        {/* Campo "Prescrição Nº" visível APENAS no Modo Validador */}
+                                        {form.calcMode === 'forward' && (
+                                            <div className="flex flex-col justify-end sm:col-span-1 mt-4 md:mt-0">
+                                                <div className="flex justify-between items-end mb-2 h-7">
+                                                    <label className="text-sm font-medium text-slate-700 flex items-center gap-1"><Hash className="w-4 h-4 text-emerald-500" /> Prescrição Nº</label>
+                                                </div>
+                                                <input type="text" name="prescriptionNumber" value={form.prescriptionNumber} onChange={handleChange} placeholder="Ex: 12345" className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-colors" />
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Ferramenta VHT */}
-                                    <section className="bg-emerald-50/50 rounded-xl border border-emerald-100 overflow-hidden">
-                                        <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-emerald-100/50 transition-colors" onClick={() => setShowVHT(!showVHT)}>
-                                            <h2 className="text-sm font-bold text-emerald-800 flex items-center gap-2">
-                                                <ActivityLine className="w-4 h-4"/> 1. Determinação do Volume Hídrico (VHT)
+                                    {/* Ferramenta VHT - ABERTO E EVIDENTE */}
+                                    <section className={`rounded-xl border overflow-hidden transition-colors shadow-sm ${form.calcMode === 'inverse' ? 'bg-teal-50/50 border-teal-200' : 'bg-emerald-50/50 border-emerald-100'}`}>
+                                        <div className={`p-4 flex justify-between items-center cursor-pointer transition-colors ${form.calcMode === 'inverse' ? 'hover:bg-teal-100/50' : 'hover:bg-emerald-100/50'}`} onClick={() => setShowVHT(!showVHT)}>
+                                            <h2 className={`text-sm font-bold flex items-center gap-2 ${form.calcMode === 'inverse' ? 'text-teal-800' : 'text-emerald-800'}`}>
+                                                <ActivityLine className="w-4 h-4"/> 1. Determinação do Volume Hídrico (VHT) 
+                                                {form.calcMode === 'inverse' && <span className="text-[10px] bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full ml-1 font-bold">Recomendado</span>}
                                             </h2>
-                                            {showVHT ? <ChevronUp className="w-4 h-4 text-emerald-600"/> : <ChevronDown className="w-4 h-4 text-emerald-600"/>}
+                                            {showVHT ? <ChevronUp className={`w-4 h-4 ${form.calcMode === 'inverse' ? 'text-teal-600' : 'text-emerald-600'}`}/> : <ChevronDown className={`w-4 h-4 ${form.calcMode === 'inverse' ? 'text-teal-600' : 'text-emerald-600'}`}/>}
                                         </div>
                                         
                                         {showVHT && (
                                             <div className="p-4 pt-0 space-y-4">
-                                                <div className="text-xs text-emerald-800 bg-white p-3 rounded-lg border border-emerald-100 shadow-sm leading-relaxed">
+                                                <div className={`text-xs p-3 rounded-lg border shadow-sm leading-relaxed ${form.calcMode === 'inverse' ? 'bg-white text-teal-800 border-teal-100' : 'bg-white text-emerald-800 border-emerald-100'}`}>
                                                     <strong>Diretriz Clínica:</strong><br/>
                                                     O VHT inicial depende do peso ao nascer e da idade gestacional, ajustando-se diariamente (+10 a 20 mL/kg/dia).<br/>
                                                     • <strong>RNT:</strong> Iniciar com 60 a 70 mL/kg/dia. (Máx: 150)<br/>
@@ -557,13 +926,13 @@
                                                 <div>
                                                     <label className="block text-sm font-semibold text-slate-700 mb-2">Classificação do RN:</label>
                                                     <div className="flex bg-white rounded-lg border border-slate-200 overflow-hidden text-xs font-medium shadow-sm">
-                                                        <label className={`flex-1 text-center py-2 cursor-pointer transition-colors ${form.rnType === 'RNT' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                                                        <label className={`flex-1 text-center py-2 cursor-pointer transition-colors ${form.rnType === 'RNT' ? (form.calcMode === 'inverse' ? 'bg-teal-600 text-white' : 'bg-emerald-600 text-white') : 'hover:bg-slate-50 text-slate-600'}`}>
                                                             <input type="radio" name="rnType" value="RNT" checked={form.rnType === 'RNT'} onChange={handleChange} className="hidden" /> A Termo (RNT)
                                                         </label>
-                                                        <label className={`flex-1 text-center py-2 cursor-pointer border-l border-r border-slate-200 transition-colors ${form.rnType === 'RNPT_maior' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                                                        <label className={`flex-1 text-center py-2 cursor-pointer border-l border-r border-slate-200 transition-colors ${form.rnType === 'RNPT_maior' ? (form.calcMode === 'inverse' ? 'bg-teal-600 text-white' : 'bg-emerald-600 text-white') : 'hover:bg-slate-50 text-slate-600'}`}>
                                                             <input type="radio" name="rnType" value="RNPT_maior" checked={form.rnType === 'RNPT_maior'} onChange={handleChange} className="hidden" /> RNPT &gt; 1500g
                                                         </label>
-                                                        <label className={`flex-1 text-center py-2 cursor-pointer transition-colors ${form.rnType === 'RNPT_menor' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                                                        <label className={`flex-1 text-center py-2 cursor-pointer transition-colors ${form.rnType === 'RNPT_menor' ? (form.calcMode === 'inverse' ? 'bg-teal-600 text-white' : 'bg-emerald-600 text-white') : 'hover:bg-slate-50 text-slate-600'}`}>
                                                             <input type="radio" name="rnType" value="RNPT_menor" checked={form.rnType === 'RNPT_menor'} onChange={handleChange} className="hidden" /> RNPT &lt; 1500g
                                                         </label>
                                                     </div>
@@ -587,20 +956,20 @@
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-white p-4 rounded-lg border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                                                <div className={`bg-white p-4 rounded-lg border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm ${form.calcMode === 'inverse' ? 'border-teal-200' : 'border-emerald-200'}`}>
                                                     <div>
-                                                        <p className="text-xs text-emerald-600 uppercase tracking-wider font-bold mb-1">VHT Calculado ({daysVHT}º dia):</p>
-                                                        <div className="text-2xl font-black text-emerald-800">{recommendedVht} <span className="text-sm font-medium text-slate-500">mL/kg/dia</span></div>
+                                                        <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${form.calcMode === 'inverse' ? 'text-teal-600' : 'text-emerald-600'}`}>VHT Calculado ({daysVHT}º dia):</p>
+                                                        <div className={`text-2xl font-black ${form.calcMode === 'inverse' ? 'text-teal-800' : 'text-emerald-800'}`}>{recommendedVht} <span className="text-sm font-medium text-slate-500">mL/kg/dia</span></div>
                                                         {parseFloat(form.weight) > 0 ? (
                                                             <p className="text-xs text-slate-600 mt-1">Total Diário: <strong>{recommendedDailyVol} mL</strong> | Vel: <strong>{recommendedRate} mL/h</strong></p>
                                                         ) : (
-                                                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1"><Info className="w-3 h-3"/> Insira o peso para obter a velocidade.</p>
+                                                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1"><Info className="w-3 h-3"/> Insira o peso (abaixo) para obter a velocidade.</p>
                                                         )}
                                                     </div>
                                                     <button 
                                                         onClick={aplicarVHT}
                                                         disabled={recommendedRate <= 0}
-                                                        className="w-full sm:w-auto px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                                        className={`w-full sm:w-auto px-4 py-2 text-white text-sm font-bold rounded-lg shadow-sm transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed ${form.calcMode === 'inverse' ? 'bg-teal-600 hover:bg-teal-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                                                     >
                                                         Aplicar VHT (Para 24h)
                                                     </button>
@@ -609,11 +978,11 @@
                                         )}
                                     </section>
 
-                                    <section className={`p-4 rounded-xl border-2 transition-colors ${form.calcMode === 'inverse' ? 'border-teal-200 bg-teal-50/20' : 'border-transparent bg-white shadow-sm'}`}>
+                                    <section className={`p-4 rounded-xl border-2 transition-colors ${form.calcMode === 'inverse' ? 'border-teal-200 bg-teal-50/10' : 'border-transparent bg-white shadow-sm'}`}>
                                         <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
                                             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-600 uppercase tracking-wider">
                                                 {form.calcMode === 'inverse' ? <Target className="w-4 h-4 text-teal-600" /> : <Activity className="w-4 h-4 text-emerald-500" />}
-                                                Parâmetros Clínicos
+                                                2. Parâmetros Clínicos
                                             </h2>
                                             
                                             {/* Via de Acesso Venoso */}
@@ -628,13 +997,13 @@
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-4">
-                                            <InputField label="Peso" name="weight" value={form.weight} onChange={handleChange} unit="kg" icon={<Scale className="w-4 h-4 text-emerald-500" />} required />
-                                            <InputField label="Velocidade" name="rate" value={form.rate} onChange={handleChange} unit="ml/h" icon={<Activity className="w-4 h-4 text-emerald-500" />} />
+                                            <InputField label="Peso" name="weight" value={form.weight} onChange={handleChange} unit="kg" icon={<Scale className="w-4 h-4 text-emerald-500" />} required={true} />
+                                            <InputField label="Velocidade" name="rate" value={form.rate} onChange={handleChange} unit="ml/h" icon={<Activity className="w-4 h-4 text-emerald-500" />} required={true} />
                                             
                                             {form.calcMode === 'inverse' && (
                                                 <>
-                                                    <InputField label="TIG Alvo" name="targetTig" value={form.targetTig} onChange={handleChange} unit="mg/kg" icon={<Target className="w-4 h-4 text-teal-500" />} required />
-                                                    <InputField label="Vol. Total da Bolsa" name="targetVolume" value={form.targetVolume} onChange={handleChange} unit="ml" icon={<Beaker className="w-4 h-4 text-teal-500" />} required />
+                                                    <InputField label="TIG Alvo" name="targetTig" value={form.targetTig} onChange={handleChange} unit="mg/kg" icon={<Target className="w-4 h-4 text-teal-500" />} required={true} />
+                                                    <InputField label="Vol. Total da Bolsa" name="targetVolume" value={form.targetVolume} onChange={handleChange} unit="ml" icon={<Beaker className="w-4 h-4 text-teal-500" />} required={true} />
                                                 </>
                                             )}
                                         </div>
@@ -830,7 +1199,7 @@
                                                 {isOsmolGreen && <p className="text-[10px] text-emerald-700 font-bold mt-2 bg-emerald-100 border border-emerald-200 p-1.5 rounded">Sinal Verde: 280 a 600 mOsm/L. Via periférica ideal e segura. Soluções de manutenção padrão.</p>}
                                                 {isOsmolYellow && <p className="text-[10px] text-amber-700 font-bold mt-2 bg-amber-100 border border-amber-200 p-1.5 rounded">Sinal Amarelo: 600 a 900 mOsm/L. Via periférica tolerada por tempo limitado. Risco moderado de flebite, exige vigilância contínua.</p>}
                                                 {isOsmolRed && form.accessType === 'periferico' && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">Sinal Vermelho: &gt; 900 mOsm/L. Acesso periférico proibido. Risco grave de lesão e necrose tecidual. Exige Acesso Central imediato.</p>}
-                                                {isOsmolRed && form.accessType === 'central' && <p className="text-[10px] text-emerald-700 font-bold mt-2 bg-emerald-100 border border-emerald-200 p-1.5 rounded">Sinal Vermelho (Periférico): &gt; 900 mOsm/L. Solução hiperosmolar, no entanto a infusão é segura pois o paciente possui Acesso Venoso Central.</p>}
+                                                {isOsmolRed && form.accessType === 'central' && <p className="text-[10px] text-emerald-700 font-bold mt-2 bg-emerald-100 border border-emerald-200 p-1.5 rounded">Sinal Vermelho (Periférico): &gt; 900 mOsm/L. Solução hiperosmolar, mas a infusão é segura pois o paciente possui Acesso Venoso Central.</p>}
 
                                                 {/* Outros alertas Físico-Químicos */}
                                                 {form.accessType === 'periferico' && isGlicoseHigh && <p className="text-[10px] text-red-700 font-bold mt-2 bg-red-100 border border-red-200 p-1.5 rounded">PERIGO: Glicose &gt; 12,5% em acesso periférico causa flebite grave.</p>}
@@ -899,23 +1268,37 @@
                                         </div>
                                     )}
 
-                                    {/* --- MENSAGEM PÓS-CÁLCULO E APOIO --- */}
+                                    {/* --- MENSAGEM PÓS-CÁLCULO (APOIO + CONTRATE-ME) --- */}
                                     {results.totalVolume > 0 && form.weight > 0 && !results.inverseError && (
-                                        <div className="mt-2 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 p-6 rounded-xl shadow-sm text-center relative overflow-hidden">
-                                            <Heart className="w-16 h-16 absolute -right-3 -top-3 text-emerald-100/60 fill-emerald-100/60" />
-                                            <h3 className="text-emerald-800 font-bold text-[15px] mb-2 flex items-center justify-center gap-2">
-                                                <Heart className="w-5 h-5 text-rose-500 fill-rose-500 animate-pulse" /> 
-                                                A ferramenta ajudou-o hoje?
-                                            </h3>
-                                            <p className="text-xs text-emerald-700 mb-4 max-w-sm mx-auto font-medium leading-relaxed">
-                                                Considere contribuir com o projeto! O seu apoio mantém esta calculadora 100% gratuita, sem anúncios e sempre atualizada.
-                                            </p>
-                                            <button 
-                                                onClick={() => setIsPixModalOpen(true)} 
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-all hover:scale-105 active:scale-95 text-sm flex items-center gap-2 mx-auto"
-                                            >
-                                                <Heart className="w-4 h-4 fill-current" /> Quero Contribuir
-                                            </button>
+                                        <div className="mt-2 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 p-6 rounded-xl shadow-sm relative overflow-hidden">
+                                            <div className="flex flex-col items-center text-center relative z-10">
+                                                <h3 className="text-emerald-800 font-bold text-[15px] mb-2 flex items-center justify-center gap-2">
+                                                    <Award className="w-5 h-5 text-emerald-600" /> 
+                                                    A ferramenta otimizou o seu tempo hoje?
+                                                </h3>
+                                                <p className="text-xs text-emerald-700 mb-5 max-w-lg mx-auto font-medium leading-relaxed">
+                                                    Este projeto foi desenvolvido com foco na segurança clínica e é mantido de forma 100% gratuita. 
+                                                    Se quiser valorizar este trabalho, <strong>considere fazer uma doação</strong>. <br/>Além disso, o farmacêutico criador da calculadora está <strong>disponível para novos desafios profissionais</strong>. Conhece alguma oportunidade? Vamos conectar-nos!
+                                                </p>
+                                                <div className="flex flex-col sm:flex-row gap-3 justify-center w-full max-w-md mx-auto">
+                                                    <button 
+                                                        onClick={() => setIsPixModalOpen(true)} 
+                                                        className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-all hover:scale-105 active:scale-95 text-sm flex items-center justify-center gap-2"
+                                                    >
+                                                        <Heart className="w-4 h-4 fill-current animate-pulse" /> Apoiar o Projeto
+                                                    </button>
+                                                    <a 
+                                                        href="https://linktr.ee/abmael.andrade24" 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-all hover:scale-105 active:scale-95 text-sm flex items-center justify-center gap-2"
+                                                    >
+                                                        <Briefcase className="w-4 h-4" /> Contrate-me
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <Heart className="w-16 h-16 absolute -right-4 -top-4 text-emerald-100/60 fill-emerald-100/60" />
+                                            <Briefcase className="w-16 h-16 absolute -left-4 -bottom-4 text-teal-100/60 fill-teal-100/60" />
                                         </div>
                                     )}
 
@@ -1096,122 +1479,257 @@
                                         </div>
                                     )}
 
+                                    <div className="flex flex-col gap-3 w-full mt-auto pt-4 border-t border-slate-100">
+                                        {form.calcMode === 'forward' && results.totalVolume > 0 && !results.inverseError && (
+                                            <button 
+                                                onClick={handleImprimirFichaAtual}
+                                                className="w-full flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-semibold transition-all shadow-sm"
+                                            >
+                                                <Printer className="w-5 h-5" /> Imprimir Ficha de Separação
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={saveToHistory} 
+                                            disabled={results.tig === 0 || results.inverseError !== null} 
+                                            className={`w-full flex items-center justify-center gap-2 p-3 text-white rounded-xl font-semibold transition-all shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed ${editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                                        >
+                                            <Save className="w-5 h-5" /> 
+                                            {editingId ? 'Atualizar Prescrição' : 'Guardar no Histórico'}
+                                        </button>
+                                    </div>
                                 </div>
                             </main>
                         </div>
-                    </div>
 
-                    {/* --- MODAL DE DOAÇÃO PIX --- */}
-                    {isPixModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
-                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
-                                
-                                <div className="px-6 py-4 bg-emerald-600 flex justify-between items-center text-white">
-                                    <h3 className="font-bold text-lg flex items-center gap-2">
-                                        <Heart className="w-5 h-5 fill-current" /> Apoiar o Projeto
-                                    </h3>
-                                    <button onClick={() => { setIsPixModalOpen(false); setCopied(false); setSelectedPix(null); }} className="text-emerald-100 hover:text-white p-1 rounded transition-colors">
-                                        <X className="w-6 h-6" />
-                                    </button>
+                        {/* Coluna Lateral: Histórico */}
+                        <div className={`bg-white rounded-2xl shadow-xl border border-slate-200 h-full max-h-[calc(100vh-2rem)] ${showHistory ? 'fixed inset-0 z-50 m-4 lg:m-0 lg:static lg:col-span-4 flex flex-col' : 'hidden'}`}>
+                            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+                                <div className="flex items-center gap-2">
+                                    <History className="w-5 h-5 text-emerald-600" />
+                                    <h2 className="font-bold text-slate-700">Histórico</h2>
+                                    <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">{history.length}</span>
                                 </div>
-                                
-                                <div className="p-6">
-                                    <p className="text-sm text-slate-600 mb-5 text-center font-medium">
-                                        Este projeto é mantido de forma voluntária. Se a calculadora lhe foi útil hoje, escolha um valor abaixo para contribuir via PIX. ❤️
-                                    </p>
-                                    
-                                    <div className="grid grid-cols-3 gap-3 mb-6">
-                                        <button 
-                                            onClick={() => { setSelectedPix('5'); setCopied(false); }} 
-                                            className={`py-3 rounded-lg border-2 font-bold text-sm transition-all ${selectedPix === '5' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 scale-105' : 'border-slate-200 text-slate-500 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-600'}`}
-                                        >
-                                            R$ 5
-                                        </button>
-                                        <button 
-                                            onClick={() => { setSelectedPix('10'); setCopied(false); }} 
-                                            className={`py-3 rounded-lg border-2 font-bold text-sm transition-all ${selectedPix === '10' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 scale-105' : 'border-slate-200 text-slate-500 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-600'}`}
-                                        >
-                                            R$ 10
-                                        </button>
-                                        <button 
-                                            onClick={() => { setSelectedPix('any'); setCopied(false); }} 
-                                            className={`py-3 rounded-lg border-2 font-bold text-sm transition-all ${selectedPix === 'any' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 scale-105' : 'border-slate-200 text-slate-500 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-600'}`}
-                                        >
-                                            Outro
-                                        </button>
-                                    </div>
+                                <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-slate-600 p-1">✕</button>
+                            </div>
 
-                                    {selectedPix && (
-                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center animate-[fade-in_0.3s_ease-out]">
-                                            <p className="text-[11px] font-bold text-slate-500 uppercase mb-2 tracking-wide">Código PIX (Copia e Cola)</p>
-                                            <div className="flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    readOnly 
-                                                    value={pixKeys[selectedPix]} 
-                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
-                                                />
-                                                <button 
-                                                    onClick={() => handleCopyPix(pixKeys[selectedPix])} 
-                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center transition-colors shadow-sm" 
-                                                    title="Copiar Chave"
-                                                >
-                                                    {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                                                </button>
-                                            </div>
+                            {/* --- BARRA DE IMPRESSÃO EM LOTE --- */}
+                            <div className="p-4 border-b border-slate-100 bg-white">
+                                <div className="flex justify-between items-center mb-3">
+                                    <span className="text-xs font-semibold text-slate-500">Impressão em Lote</span>
+                                    <div className="flex gap-2">
+                                        <button onClick={selectAll} className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-medium transition-colors">Marcar Todos</button>
+                                        <button onClick={deselectAll} className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-medium transition-colors">Desmarcar</button>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleImprimirLote} 
+                                    disabled={reportItems.length === 0}
+                                    className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-bold transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Printer className="w-4 h-4" /> 
+                                    {selectedIds.length > 0 ? `Imprimir Selecionados (${selectedIds.length})` : 'Imprimir Todos do Validador'}
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                                {history.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-400">
+                                        <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p className="text-sm font-medium">Nenhum cálculo guardado ainda.</p>
+                                    </div>
+                                ) : (
+                                    history.map((item) => (
+                                        <div key={item.id} className={`group bg-white border ${selectedIds.includes(item.id) ? 'border-emerald-400 ring-1 ring-emerald-400' : 'border-slate-200'} rounded-xl p-3 hover:shadow-md transition-all relative flex flex-col`}>
                                             
-                                            {copied && (
-                                                <div className="mt-4 p-3 bg-emerald-100/50 border border-emerald-200 rounded-lg">
-                                                    <p className="text-sm font-bold text-emerald-700 flex items-center justify-center gap-1.5">
-                                                        <CheckCircle className="w-4 h-4" /> Chave copiada!
-                                                    </p>
-                                                    <p className="text-xs text-emerald-600 mt-1 font-medium">Muito obrigado pelo seu apoio. Faz toda a diferença! 🎉</p>
+                                            {/* Cabeçalho do Cartão Histórico */}
+                                            <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-2">
+                                                <div className="flex items-start gap-2">
+                                                    {item.details.calcMode === 'forward' && (
+                                                        <div className="mt-0.5">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={selectedIds.includes(item.id)} 
+                                                                onChange={() => toggleSelection(item.id)} 
+                                                                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" 
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-800 text-sm leading-tight">{item.patientName || 'S/ NOME'}</h4>
+                                                        <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 mt-1">
+                                                            <span>{item.timestamp.split(' ')[0]}</span>
+                                                            {item.details.prescriptionNumber && <span className="bg-slate-100 px-1 rounded font-bold text-slate-600">Nº {item.details.prescriptionNumber}</span>}
+                                                            {item.details.daysOfLife !== null && <span className="bg-emerald-50 text-emerald-700 font-medium px-1 rounded">{item.details.daysOfLife} dias</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-0.5">
+                                                    <span className={`text-sm font-bold ${getStatus(item.tig).color}`}>{item.tig.toFixed(1)}</span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">TIG</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Lista Editável de Materiais no Histórico */}
+                                            {item.details.calcMode === 'forward' && (
+                                                <div className="mb-3">
+                                                    <p className="text-[10px] font-bold text-emerald-800 uppercase mb-1">Materiais (Editáveis para Ficha):</p>
+                                                    <div className="bg-slate-50 rounded p-1.5 border border-slate-100 space-y-1">
+                                                        {item.materials.map((mat, matIdx) => (
+                                                            <div key={matIdx} className="flex items-center gap-1 group/mat">
+                                                                <input 
+                                                                    type="number" 
+                                                                    value={mat.qtd} 
+                                                                    onChange={(e) => handleMaterialQtyChange(item.id, matIdx, e.target.value)}
+                                                                    className="w-9 p-0.5 text-center font-bold text-emerald-900 bg-white border border-slate-200 rounded focus:border-emerald-400 focus:outline-none transition-colors text-[10px]"
+                                                                    min="0"
+                                                                />
+                                                                <span className="text-emerald-700 font-bold text-[9px]">x</span>
+                                                                <div className="relative flex-1 flex items-center">
+                                                                    <input 
+                                                                        type="text" 
+                                                                        value={mat.name} 
+                                                                        onChange={(e) => handleMaterialNameChange(item.id, matIdx, e.target.value)}
+                                                                        className="w-full p-0.5 text-[10px] font-medium text-slate-700 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-200 focus:border-emerald-400 rounded focus:outline-none transition-colors"
+                                                                    />
+                                                                    <button 
+                                                                        onClick={() => removeMaterial(item.id, matIdx)}
+                                                                        className="absolute right-0 opacity-0 group-hover/mat:opacity-100 p-0.5 text-slate-400 hover:text-red-500 transition-opacity"
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        <button onClick={() => addMaterial(item.id)} className="w-full text-center text-[9px] font-bold text-emerald-600 hover:text-emerald-800 mt-1 py-1 bg-white border border-dashed border-emerald-200 rounded">
+                                                            + Adicionar Material
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
+                                            
+                                            <div className="flex gap-2 pt-2 border-t border-slate-100 mt-auto">
+                                                <button onClick={() => handleEdit(item)} className="flex-1 py-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors flex items-center justify-center gap-1"><Pencil className="w-3 h-3" /> Editar</button>
+                                                <button onClick={() => deleteHistoryItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
+                                    ))
+                                )}
                             </div>
                         </div>
-                    )}
 
-                    {/* --- MODAL DE REPORTAR ERROS --- */}
-                    {isErrorModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
-                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all">
-                                
-                                <div className="px-6 py-4 bg-emerald-600 flex justify-between items-center text-white">
-                                    <h3 className="font-bold text-lg flex items-center gap-2">
-                                        <Mail className="w-5 h-5" /> Reportar Erro
-                                    </h3>
-                                    <button onClick={() => setIsErrorModalOpen(false)} className="text-emerald-100 hover:text-white p-1 rounded transition-colors">
-                                        <X className="w-6 h-6" />
-                                    </button>
-                                </div>
-                                
-                                <div className="p-6 text-center">
-                                    <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <AlertTriangle className="w-6 h-6" />
-                                    </div>
-                                    <p className="text-sm text-slate-600 mb-5 font-medium leading-relaxed">
-                                        Percebeu alguma informação errada ou desatualizada? Comunique-nos! Assim, podemos corrigir e melhorar a ferramenta juntos.
-                                    </p>
+                        {/* --- MODAL DE DOAÇÃO PIX --- */}
+                        {isPixModalOpen && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity no-print">
+                                <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
                                     
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5">
-                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">E-mail de Contato</p>
-                                        <p className="text-emerald-700 font-bold select-all">abmael.andrade24@gmail.com</p>
+                                    <div className="px-6 py-4 bg-emerald-600 flex justify-between items-center text-white">
+                                        <h3 className="font-bold text-lg flex items-center gap-2">
+                                            <Heart className="w-5 h-5 fill-current" /> Apoiar o Projeto
+                                        </h3>
+                                        <button onClick={() => { setIsPixModalOpen(false); setCopied(false); setSelectedPix(null); }} className="text-emerald-100 hover:text-white p-1 rounded transition-colors">
+                                            <X className="w-6 h-6" />
+                                        </button>
                                     </div>
+                                    
+                                    <div className="p-6">
+                                        <p className="text-sm text-slate-600 mb-5 text-center font-medium">
+                                            Este projeto é mantido de forma voluntária. Se a calculadora lhe foi útil hoje, escolha um valor abaixo para contribuir via PIX. ❤️
+                                        </p>
+                                        
+                                        <div className="grid grid-cols-3 gap-3 mb-6">
+                                            <button 
+                                                onClick={() => { setSelectedPix('5'); setCopied(false); }} 
+                                                className={`py-3 rounded-lg border-2 font-bold text-sm transition-all ${selectedPix === '5' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 scale-105' : 'border-slate-200 text-slate-500 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-600'}`}
+                                            >
+                                                R$ 5
+                                            </button>
+                                            <button 
+                                                onClick={() => { setSelectedPix('10'); setCopied(false); }} 
+                                                className={`py-3 rounded-lg border-2 font-bold text-sm transition-all ${selectedPix === '10' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 scale-105' : 'border-slate-200 text-slate-500 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-600'}`}
+                                            >
+                                                R$ 10
+                                            </button>
+                                            <button 
+                                                onClick={() => { setSelectedPix('any'); setCopied(false); }} 
+                                                className={`py-3 rounded-lg border-2 font-bold text-sm transition-all ${selectedPix === 'any' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 scale-105' : 'border-slate-200 text-slate-500 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-600'}`}
+                                            >
+                                                Outro
+                                            </button>
+                                        </div>
 
-                                    <a 
-                                        href="mailto:abmael.andrade24@gmail.com?subject=Sugestão/Correção%20-%20Calculadora%20TIG%20Neonatal"
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white w-full py-3 rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
-                                    >
-                                        <Mail className="w-4 h-4" /> Enviar E-mail
-                                    </a>
+                                        {selectedPix && (
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center animate-[fade-in_0.3s_ease-out]">
+                                                <p className="text-[11px] font-bold text-slate-500 uppercase mb-2 tracking-wide">Código PIX (Copia e Cola)</p>
+                                                <div className="flex gap-2">
+                                                    <input 
+                                                        type="text" 
+                                                        readOnly 
+                                                        value={pixKeys[selectedPix]} 
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
+                                                    />
+                                                    <button 
+                                                        onClick={() => handleCopyPix(pixKeys[selectedPix])} 
+                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center transition-colors shadow-sm" 
+                                                        title="Copiar Chave"
+                                                    >
+                                                        {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
+                                                
+                                                {copied && (
+                                                    <div className="mt-4 p-3 bg-emerald-100/50 border border-emerald-200 rounded-lg">
+                                                        <p className="text-sm font-bold text-emerald-700 flex items-center justify-center gap-1.5">
+                                                            <CheckCircle className="w-4 h-4" /> Chave copiada!
+                                                        </p>
+                                                        <p className="text-xs text-emerald-600 mt-1 font-medium">Muito obrigado pelo seu apoio. Faz toda a diferença! 🎉</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* --- MODAL DE REPORTAR ERROS --- */}
+                        {isErrorModalOpen && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity no-print">
+                                <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all">
+                                    
+                                    <div className="px-6 py-4 bg-emerald-600 flex justify-between items-center text-white">
+                                        <h3 className="font-bold text-lg flex items-center gap-2">
+                                            <Mail className="w-5 h-5" /> Reportar Erro
+                                        </h3>
+                                        <button onClick={() => setIsErrorModalOpen(false)} className="text-emerald-100 hover:text-white p-1 rounded transition-colors">
+                                            <X className="w-6 h-6" />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="p-6 text-center">
+                                        <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <AlertTriangle className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-sm text-slate-600 mb-5 font-medium leading-relaxed">
+                                            Percebeu alguma informação errada ou desatualizada? Comunique-nos! Assim, podemos corrigir e melhorar a ferramenta juntos.
+                                        </p>
+                                        
+                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5">
+                                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">E-mail de Contato</p>
+                                            <p className="text-emerald-700 font-bold select-all">abmael.andrade24@gmail.com</p>
+                                        </div>
+
+                                        <a 
+                                            href="mailto:abmael.andrade24@gmail.com?subject=Sugestão/Correção%20-%20Calculadora%20TIG%20Neonatal"
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white w-full py-3 rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
+                                        >
+                                            <Mail className="w-4 h-4" /> Enviar E-mail
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             );
         }
@@ -1219,12 +1737,25 @@
         const InputField = ({ label, name, value, onChange, unit, icon, placeholder, subLabel, isGlucose, compact, required }) => (
             <div className="relative">
                 <div className="flex justify-between items-baseline mb-1">
-                    <label htmlFor={name} className={`block font-medium text-slate-700 ${compact ? 'text-xs' : 'text-sm'}`}>{label} {required && <span className="text-red-500">*</span>}</label>
+                    <label htmlFor={name} className={`block ${compact ? 'text-xs' : 'text-sm'} ${required ? 'text-rose-700 font-bold' : 'text-slate-700 font-medium'}`}>
+                        {label} {required && <span className="text-rose-500" title="Campo Obrigatório">*</span>}
+                    </label>
                     {subLabel && <span className="text-[10px] text-slate-400 font-mono">{subLabel}</span>}
                 </div>
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">{icon || <span className={`w-1.5 h-1.5 rounded-full ${isGlucose ? 'bg-emerald-400' : 'bg-slate-300'}`}></span>}</div>
-                    <input type="number" id={name} name={name} value={value} onChange={onChange} placeholder={placeholder || "0"} step="0.1" min="0" className={`block w-full pl-8 pr-8 ${compact ? 'py-1.5 text-sm' : 'py-2'} bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none shadow-sm group-hover:border-slate-300`} />
+                    <input 
+                        type="number" 
+                        id={name} 
+                        name={name} 
+                        value={value} 
+                        onChange={onChange} 
+                        placeholder={placeholder || "0"} 
+                        step="0.1" 
+                        min="0" 
+                        className={`block w-full pl-8 pr-8 ${compact ? 'py-1.5 text-sm' : 'py-2'} border rounded-lg text-slate-900 transition-all outline-none shadow-sm 
+                        ${required && !value ? 'bg-rose-50/50 border-rose-300 placeholder:text-rose-300 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500' : 'bg-white border-slate-200 placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 group-hover:border-slate-300'}`} 
+                    />
                     <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none"><span className="text-slate-400 text-[10px] font-medium">{unit}</span></div>
                 </div>
             </div>
